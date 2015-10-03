@@ -23,5 +23,7 @@ public class ConsoleMain {
         options.addOption(ConsoleMain.makeOptionWithArgument("vol", "volume", "Volume", false));
 
         CommandLine commandLine = new DefaultParser().parse(options, args);
+
+        // TODO: Work with UserController
     }
 }
