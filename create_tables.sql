@@ -6,26 +6,32 @@
 CREATE TABLE IF NOT EXISTS `accounting` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
-  `role_id` int(11) NOT NULL,
+  `resource_id` int(11) NOT NULL,
+  `roles` tinyint(4) NOT NULL,
   `volume` int(11) NOT NULL DEFAULT '0',
   `logon_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `logout_date` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `FK_accounting_users` (`user_id`),
+  KEY `FK_accounting_resources` (`resource_id`),
+  CONSTRAINT `FK_accounting_resources` FOREIGN KEY (`resource_id`) REFERENCES `resources` (`id`) ON DELETE CASCADE,
   CONSTRAINT `FK_accounting_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS `roles` (
+CREATE TABLE IF NOT EXISTS `resources` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `internal_name` varchar(50) NOT NULL,
+  `name` varchar(64) NOT NULL,
+  `parent_resource_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `internal_name` (`internal_name`)
+  KEY `FK_resources_resources` (`parent_resource_id`),
+  CONSTRAINT `FK_resources_resources` FOREIGN KEY (`parent_resource_id`) REFERENCES `resources` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `login` varchar(32) NOT NULL,
   `passwordHash` varchar(64) NOT NULL,
+  `roles` tinyint(4) NOT NULL,
   `salt` varchar(32) NOT NULL,
   `personName` varchar(64) NOT NULL,
   PRIMARY KEY (`id`),
