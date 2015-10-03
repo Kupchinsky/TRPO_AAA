@@ -11,11 +11,13 @@ public class UserController {
     @Getter
     @Setter
     private Accounting userAccounting = null;
+    private static Database db = new Database(DatabaseConfig.host, DatabaseConfig.port, DatabaseConfig.database, DatabaseConfig.userName, DatabaseConfig.password);
 
     public boolean logIn(String userName, String password) {
-
+        return false;
     }
 
     public boolean logOut() {
+        return false;
     }
 }
