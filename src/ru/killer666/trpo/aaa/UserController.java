@@ -135,13 +135,13 @@ public class UserController {
             preparedStatement.setInt(1, this.logOnUser.getDatabaseId());
             preparedStatement.setInt(2, this.logOnUserAccounting.getRole().getValue());
             preparedStatement.setInt(3, this.logOnUserAccounting.getVolume());
-            preparedStatement.setDate(4, new java.sql.Date(this.logOnUserAccounting.getLoginDate().getTime()));
-            preparedStatement.setDate(5, new java.sql.Date(this.logOnUserAccounting.getLoginDate().getTime()));
+            preparedStatement.setTimestamp(4, new java.sql.Timestamp(this.logOnUserAccounting.getLoginDate().getTime()));
+            preparedStatement.setTimestamp(5, new java.sql.Timestamp(this.logOnUserAccounting.getLoginDate().getTime()));
 
             if (preparedStatement.executeUpdate() == 0)
                 throw new SQLException("Creating accounting item failed, no rows affected.");
 
-            int accountingId = -1;
+            int accountingId;
 
             try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
                 if (generatedKeys.next())
@@ -169,7 +169,8 @@ public class UserController {
             e.printStackTrace();
 
             try {
-                connection.rollback();
+                if (connection != null)
+                    connection.rollback();
             } catch (SQLException e1) {
                 e1.printStackTrace();
             }
