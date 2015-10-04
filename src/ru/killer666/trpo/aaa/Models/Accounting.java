@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -19,6 +20,6 @@ public class Accounting {
     @NonNull
     private Role role;
     private int volume = 0;
-    private Date loginDate = null;
+    private Date loginDate = Calendar.getInstance().getTime();
     private Date logoutDate = null;
 }

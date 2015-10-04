@@ -8,6 +8,7 @@ import ru.killer666.trpo.aaa.models.Role;
 import ru.killer666.trpo.aaa.models.User;
 
 import java.sql.*;
+import java.util.Calendar;
 
 public class UserController {
     @Getter
@@ -124,6 +125,9 @@ public class UserController {
         if (this.logOnUser == null)
             return;
 
+        if (this.logOnUserAccounting.getLogoutDate() == null)
+            this.logOnUserAccounting.setLogoutDate(Calendar.getInstance().getTime());
+
         Connection connection = null;
 
         try {
@@ -136,7 +140,7 @@ public class UserController {
             preparedStatement.setInt(2, this.logOnUserAccounting.getRole().getValue());
             preparedStatement.setInt(3, this.logOnUserAccounting.getVolume());
             preparedStatement.setTimestamp(4, new java.sql.Timestamp(this.logOnUserAccounting.getLoginDate().getTime()));
-            preparedStatement.setTimestamp(5, new java.sql.Timestamp(this.logOnUserAccounting.getLoginDate().getTime()));
+            preparedStatement.setTimestamp(5, new java.sql.Timestamp(this.logOnUserAccounting.getLogoutDate().getTime()));
 
             if (preparedStatement.executeUpdate() == 0)
                 throw new SQLException("Creating accounting item failed, no rows affected.");
