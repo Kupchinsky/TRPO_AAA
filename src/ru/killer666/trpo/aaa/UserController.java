@@ -36,7 +36,7 @@ public class UserController {
             }
 
             // Checking password
-            if (this.encryptPassword(password, resultUser.getString("salt")).equals(resultUser.getString("passwordHash"))) {
+            if (!this.encryptPassword(password, resultUser.getString("salt")).equals(resultUser.getString("passwordHash"))) {
                 throw new IncorrectPasswordException();
             }
 
