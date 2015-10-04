@@ -26,7 +26,6 @@ CREATE TABLE IF NOT EXISTS `users` (
 CREATE TABLE IF NOT EXISTS `accounting` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
-  `resources_id` int(11) NOT NULL,
   `role` tinyint(4) NOT NULL,
   `volume` int(11) NOT NULL DEFAULT '0',
   `logon_date` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
