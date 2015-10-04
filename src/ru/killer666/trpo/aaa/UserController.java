@@ -1,25 +1,20 @@
 package ru.killer666.trpo.aaa;
 
 import lombok.Getter;
-import lombok.Setter;
 import org.apache.commons.codec.digest.DigestUtils;
 import ru.killer666.trpo.aaa.models.Accounting;
 import ru.killer666.trpo.aaa.models.Resource;
 import ru.killer666.trpo.aaa.models.Role;
 import ru.killer666.trpo.aaa.models.User;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 
 public class UserController {
     @Getter
     private User logOnUser = null;
-
     @Getter
-    @Setter
-    private Accounting userAccounting = null;
+    private Accounting logOnUserAccounting = null;
+
     private static Database db = new Database(DatabaseConfig.host, DatabaseConfig.port, DatabaseConfig.database, DatabaseConfig.userName, DatabaseConfig.password);
 
     private String encryptPassword(String password, String salt) {
@@ -90,11 +85,11 @@ public class UserController {
             }
 
             this.logOnUser = new User(resultUser.getInt("id"), resultUser.getString("login"), resultUser.getString("passwordHash"), resultUser.getString("salt"), resultUser.getString("personName"));
-            this.userAccounting = new Accounting(this.logOnUser, Role.fromInt(role));
+            this.logOnUserAccounting = new Accounting(this.logOnUser, Role.fromInt(role));
 
             // Finding all child resources
-            Resource lastParentResource = new Resource(resultResource.getInt("id"), resultResource.getString("name"));
-            this.userAccounting.getResources().add(lastParentResource);
+            Resource lastParentResource = new Resource(resultResource.getInt("id"), resultResource.getString("name"), null);
+            this.logOnUserAccounting.getResources().add(lastParentResource);
 
             while (true) {
                 preparedStatement = UserController.db.getConnection().prepareStatement("SELECT * FROM `resources` WHERE `parent_resource_id`=?");
@@ -106,9 +101,8 @@ public class UserController {
                     break;
                 }
 
-                Resource newResource = new Resource(resultChildResource.getInt("id"), resultChildResource.getString("name"));
-                newResource.setParentResource(lastParentResource);
-                this.userAccounting.getResources().add(newResource);
+                Resource newResource = new Resource(resultChildResource.getInt("id"), resultChildResource.getString("name"), lastParentResource);
+                this.logOnUserAccounting.getResources().add(newResource);
 
                 lastParentResource = newResource;
             }
@@ -127,7 +121,67 @@ public class UserController {
     }
 
     public void logOut() {
-        // TODO: Write "userAccounting" into database
+        if (this.logOnUser == null)
+            return;
+
+        Connection connection = null;
+
+        try {
+            connection = UserController.db.getConnection();
+            connection.setAutoCommit(false);
+
+            // Write user accounting into database
+            PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO `accounting` (`user_id`, `role`, `volume`, `logon_date`, `logout_date`) VALUES (?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
+            preparedStatement.setInt(1, this.logOnUser.getDatabaseId());
+            preparedStatement.setInt(2, this.logOnUserAccounting.getRole().getValue());
+            preparedStatement.setInt(3, this.logOnUserAccounting.getVolume());
+            preparedStatement.setDate(4, new java.sql.Date(this.logOnUserAccounting.getLoginDate().getTime()));
+            preparedStatement.setDate(5, new java.sql.Date(this.logOnUserAccounting.getLoginDate().getTime()));
+
+            if (preparedStatement.executeUpdate() == 0)
+                throw new SQLException("Creating accounting item failed, no rows affected.");
+
+            int accountingId = -1;
+
+            try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
+                if (generatedKeys.next())
+                    accountingId = (int) generatedKeys.getLong(1);
+                else
+                    throw new SQLException("Creating accounting item failed, no ID obtained.");
+            }
+
+            // Write all resources
+            for (Resource resource : this.logOnUserAccounting.getResources()) {
+                preparedStatement = connection.prepareStatement("INSERT INTO `accounting_resources` (`accounting_id`, `resource_id`) VALUES (?, ?)");
+                preparedStatement.setInt(1, accountingId);
+                preparedStatement.setInt(2, resource.getDatabaseId());
+
+                if (preparedStatement.executeUpdate() == 0)
+                    throw new SQLException("Creating accounting resource item failed, no rows affected.");
+            }
+
+            connection.commit();
+
+            this.logOnUserAccounting = null;
+            this.logOnUser = null;
+        } catch (SQLException e) {
+            // Error while working
+            e.printStackTrace();
+
+            try {
+                connection.rollback();
+            } catch (SQLException e1) {
+                e1.printStackTrace();
+            }
+        } finally {
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     public static class UserNotFoundException extends Exception {
