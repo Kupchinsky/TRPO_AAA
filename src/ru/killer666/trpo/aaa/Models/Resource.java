@@ -10,5 +10,4 @@ import lombok.ToString;
 public class Resource {
     private int databaseId;
     private String name;
-    private Resource parentResource = null;
 }

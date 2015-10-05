@@ -1,6 +1,7 @@
 package ru.killer666.trpo.aaa;
 
 import org.apache.commons.cli.*;
+import ru.killer666.trpo.aaa.models.Role;
 
 import java.io.PrintWriter;
 import java.text.DateFormat;
@@ -35,54 +36,80 @@ public class ConsoleMain {
         return result;
     }
 
-    public static void main(String[] args) throws java.text.ParseException {
+    public static void main(String[] args) {
         Options options = new Options();
         options.addOption(ConsoleMain.makeOptionWithArgument("l", "login", "Login name", true));
         options.addOption(ConsoleMain.makeOptionWithArgument("p", "password", "Password", true));
-        options.addOption(ConsoleMain.makeOptionWithArgument("res", "resource", "Resource name", true));
-        options.addOption(ConsoleMain.makeOptionWithArgument("r", "role", "Role", true));
+        options.addOption(ConsoleMain.makeOptionWithArgument("res", "resource", "Resource name", false));
+        options.addOption(ConsoleMain.makeOptionWithArgument("r", "role", "Role", false));
         options.addOption(ConsoleMain.makeOptionWithArgument("sd", "start-date", "Start date", false));
         options.addOption(ConsoleMain.makeOptionWithArgument("ed", "end-date", "End date", false));
         options.addOption(ConsoleMain.makeOptionWithArgument("vol", "volume", "Volume", false));
 
-        CommandLine commandLine = null;
         try {
-            commandLine = new DefaultParser().parse(options, args);
+            CommandLine commandLine = new DefaultParser().parse(options, args);
+            UserController controller = new UserController();
+
+            // Auth user
+            controller.authUser(commandLine.getOptionValue("l"), commandLine.getOptionValue("p"));
+
+            if (commandLine.hasOption("res")) {
+                if (!commandLine.hasOption("r"))
+                    throw new MissingOptionException("Option not found: -r,--role");
+
+                // Auth resource
+                controller.authResource(commandLine.getOptionValue("res"));
+
+                // Get role and create accounting
+                controller.createAccounting(Role.fromInt(Integer.parseInt(commandLine.getOptionValue("r"))));
+
+                boolean hasSd = commandLine.hasOption("sd");
+                boolean hasEd = commandLine.hasOption("ed");
+                boolean hasVol = commandLine.hasOption("vol");
+
+                if (hasSd || hasEd || hasVol) {
+
+                    if (!hasSd)
+                        throw new MissingOptionException("Option not found: -sd,--start-date");
+                    else if (!hasEd)
+                        throw new MissingOptionException("Option not found: -ed,--end-date");
+                    else if (!hasVol)
+                        throw new MissingOptionException("Option not found: -vol,--volume");
+
+                    DateFormat format = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.ENGLISH);
+
+                    controller.getLogOnUserAccounting().setLoginDate(format.parse(commandLine.getOptionValue("sd")));
+                    controller.getLogOnUserAccounting().setLogoutDate(format.parse(commandLine.getOptionValue("ed")));
+                    controller.getLogOnUserAccounting().setVolume(Integer.parseInt(commandLine.getOptionValue("vol")));
+
+                    if (controller.getLogOnUserAccounting().getVolume() <= 0)
+                        throw new NumberFormatException("Invalid volume number!");
+                }
+
+                controller.saveAccounting();
+            }
+
+            controller.clearAll();
+
+            System.exit(0);
         } catch (ParseException e) {
             ConsoleMain.printHelp(options);
             System.exit(255);
-        }
-
-        UserController controller = new UserController();
-
-        try {
-            controller.logIn(commandLine.getOptionValue("l"), commandLine.getOptionValue("p"), commandLine.getOptionValue("res"), Integer.valueOf(commandLine.getOptionValue("r")));
         } catch (UserController.UserNotFoundException e) {
             e.printStackTrace();
             System.exit(1);
         } catch (UserController.IncorrectPasswordException e) {
             e.printStackTrace();
             System.exit(2);
-        } catch (UserController.ResourceDeniedException | UserController.ResourceNotFoundException e) {
+        } catch (Role.InvalidRoleException e) {
             e.printStackTrace();
             System.exit(3);
+        } catch (UserController.ResourceNotFoundException | UserController.ResourceDeniedException e) {
+            e.printStackTrace();
+            System.exit(4);
+        } catch (java.text.ParseException | NumberFormatException e) {
+            e.printStackTrace();
+            System.exit(5);
         }
-
-        if (commandLine.hasOption("sd")) {
-            DateFormat format = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.ENGLISH);
-            controller.getLogOnUserAccounting().setLoginDate(format.parse(commandLine.getOptionValue("sd")));
-        }
-
-        if (commandLine.hasOption("ed")) {
-            DateFormat format = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.ENGLISH);
-            controller.getLogOnUserAccounting().setLogoutDate(format.parse(commandLine.getOptionValue("ed")));
-        }
-
-        if (commandLine.hasOption("vol")) {
-            controller.getLogOnUserAccounting().setVolume(Integer.valueOf(commandLine.getOptionValue("vol")));
-        }
-
-        controller.logOut();
-        System.exit(0);
     }
 }

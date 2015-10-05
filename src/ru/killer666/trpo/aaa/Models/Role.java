@@ -14,7 +14,7 @@ public enum Role {
         this.value = value;
     }
 
-    public static Role fromInt(int x) {
+    public static Role fromInt(int x) throws InvalidRoleException {
         switch (x) {
             case 1:
                 return READ;
@@ -24,6 +24,9 @@ public enum Role {
                 return EXECUTE;
         }
 
-        return null;
+        throw new InvalidRoleException();
+    }
+
+    public static class InvalidRoleException extends Exception {
     }
 }
