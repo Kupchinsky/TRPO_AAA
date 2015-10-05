@@ -52,8 +52,9 @@ CREATE TABLE IF NOT EXISTS `resources_users` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `resource_id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
+  `role` tinyint(4) NOT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `U_resource_user` (`resource_id`,`user_id`),
+  UNIQUE KEY `U_resource_user_role` (`resource_id`,`user_id`,`role`),
   KEY `FK_resources_users_users` (`user_id`),
   CONSTRAINT `FK_resources_users_resources` FOREIGN KEY (`resource_id`) REFERENCES `resources` (`id`) ON DELETE CASCADE,
   CONSTRAINT `FK_resources_users_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE

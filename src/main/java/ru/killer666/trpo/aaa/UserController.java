@@ -59,9 +59,10 @@ public class UserController {
 
             while (true) {
                 // Checking access for this resource
-                preparedStatement = connection.prepareStatement("SELECT * FROM `resources_users` WHERE `resource_id`=? AND `user_id`=?");
+                preparedStatement = connection.prepareStatement("SELECT * FROM `resources_users` WHERE `resource_id`=? AND `user_id`=? AND `role`=?");
                 preparedStatement.setInt(1, lastResourceId);
                 preparedStatement.setInt(2, this.logOnUser.getDatabaseId());
+                preparedStatement.setInt(3, this.logOnUserAccounting.getRole().getValue());
                 ResultSet resultAccess = preparedStatement.executeQuery();
 
                 if (resultAccess.first()) {
