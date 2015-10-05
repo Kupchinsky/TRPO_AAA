@@ -76,6 +76,11 @@ public class UserController {
                 preparedStatement.setInt(1, lastParentResourceId);
 
                 ResultSet resultParentResource = preparedStatement.executeQuery();
+
+                if (!resultParentResource.first()) {
+                    break;
+                }
+
                 lastResourceId = resultParentResource.getInt("id");
                 lastParentResourceId = resultParentResource.getInt("parent_resource_id");
                 hasParentResourceId = !resultParentResource.wasNull();
