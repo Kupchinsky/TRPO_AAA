@@ -16,7 +16,6 @@ public class UserController {
     private User logOnUser = null;
     @Getter
     private Accounting logOnUserAccounting = null;
-    private Resource logOnResource = null;
     private Connection currentConnection = null;
 
     private static Database db = new Database(DatabaseConfig.host, DatabaseConfig.port, DatabaseConfig.database, DatabaseConfig.userName, DatabaseConfig.password);
@@ -34,7 +33,7 @@ public class UserController {
     }
 
     private String encryptPassword(String password, String salt) {
-        return DigestUtils.sha1Hex(DigestUtils.sha1Hex(password) + salt);
+        return DigestUtils.shaHex(DigestUtils.shaHex(password) + salt);
     }
 
     public void authResource(String resourceName) throws ResourceNotFoundException, ResourceDeniedException {
@@ -93,7 +92,25 @@ public class UserController {
                 throw new ResourceDeniedException();
             }
 
-            this.logOnResource = new Resource(resultResource.getInt("id"), resultResource.getString("name"));
+            // Finding all child resources
+            Resource lastParentResource = new Resource(resultResource.getInt("id"), resultResource.getString("name"), null);
+            this.logOnUserAccounting.getResources().add(lastParentResource);
+
+            while (true) {
+                preparedStatement = UserController.db.getConnection().prepareStatement("SELECT * FROM `resources` WHERE `parent_resource_id`=?");
+                preparedStatement.setInt(1, lastParentResource.getDatabaseId());
+
+                ResultSet resultChildResource = preparedStatement.executeQuery();
+
+                if (!resultChildResource.first()) {
+                    break;
+                }
+
+                Resource newResource = new Resource(resultChildResource.getInt("id"), resultChildResource.getString("name"), lastParentResource);
+                this.logOnUserAccounting.getResources().add(newResource);
+
+                lastParentResource = newResource;
+            }
         } catch (SQLException e) {
             // Error while working
             e.printStackTrace();
@@ -127,7 +144,7 @@ public class UserController {
     }
 
     public void createAccounting(Role role) {
-        this.logOnUserAccounting = new Accounting(this.logOnUser, this.logOnResource, role);
+        this.logOnUserAccounting = new Accounting(this.logOnUser, role);
     }
 
     public void saveAccounting() {
@@ -162,12 +179,14 @@ public class UserController {
             }
 
             // Write resource
-            preparedStatement = connection.prepareStatement("INSERT INTO `accounting_resources` (`accounting_id`, `resource_id`) VALUES (?, ?)");
-            preparedStatement.setInt(1, accountingId);
-            preparedStatement.setInt(2, this.logOnResource.getDatabaseId());
+            for (Resource resource : this.logOnUserAccounting.getResources()) {
+                preparedStatement = connection.prepareStatement("INSERT INTO `accounting_resources` (`accounting_id`, `resource_id`) VALUES (?, ?)");
+                preparedStatement.setInt(1, accountingId);
+                preparedStatement.setInt(2, resource.getDatabaseId());
 
-            if (preparedStatement.executeUpdate() == 0)
-                throw new SQLException("Creating accounting resource item failed, no rows affected.");
+                if (preparedStatement.executeUpdate() == 0)
+                    throw new SQLException("Creating accounting resource item failed, no rows affected.");
+            }
 
             connection.commit();
 
@@ -186,7 +205,6 @@ public class UserController {
     }
 
     public void clearAll() {
-        this.logOnResource = null;
         this.logOnUserAccounting = null;
         this.logOnUser = null;
     }

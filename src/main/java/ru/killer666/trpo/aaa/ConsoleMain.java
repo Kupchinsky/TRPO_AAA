@@ -57,11 +57,11 @@ public class ConsoleMain {
                 if (!commandLine.hasOption("r"))
                     throw new MissingOptionException("Option not found: -r,--role");
 
-                // Auth resource
-                controller.authResource(commandLine.getOptionValue("res"));
-
                 // Get role and create accounting
                 controller.createAccounting(Role.fromInt(Integer.parseInt(commandLine.getOptionValue("r"))));
+
+                // Auth resource
+                controller.authResource(commandLine.getOptionValue("res"));
 
                 boolean hasSd = commandLine.hasOption("sd");
                 boolean hasEd = commandLine.hasOption("ed");

@@ -5,8 +5,10 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Data
@@ -15,7 +17,7 @@ public class Accounting {
     @NonNull
     private User user;
     @NonNull
-    private Resource resource;
+    private List<Resource> resources = new ArrayList<>();
     @NonNull
     private Role role;
     private int volume = 0;
