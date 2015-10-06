@@ -58,7 +58,12 @@ public class ConsoleMain {
                     throw new MissingOptionException("Option not found: -r,--role");
 
                 // Get role and create accounting
-                controller.createAccounting(Role.fromInt(Integer.parseInt(commandLine.getOptionValue("r"))));
+                Role role = Role.valueOf(commandLine.getOptionValue("r"));
+
+                if (role == null)
+                    throw new Role.InvalidRoleException();
+
+                controller.createAccounting(role);
 
                 // Auth resource
                 controller.authResource(commandLine.getOptionValue("res"));
