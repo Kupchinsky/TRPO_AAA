@@ -60,7 +60,11 @@ public class ConsoleMain {
                     throw new MissingOptionException("Option not found: -role,--role");
 
                 // Get role and create accounting
-                Role role = Role.valueOf(commandLine.getOptionValue("role"));
+                Role role = null;
+                try {
+                    role = Role.valueOf(commandLine.getOptionValue("role"));
+                } catch (IllegalArgumentException e) {
+                }
 
                 if (role == null)
                     throw new Role.InvalidRoleException();
@@ -84,6 +88,7 @@ public class ConsoleMain {
                         throw new MissingOptionException("Option not found: -vol,--volume");
 
                     DateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
+                    format.setLenient(false);
 
                     controller.getLogOnUserAccounting().setLoginDate(format.parse(commandLine.getOptionValue("ds")));
                     controller.getLogOnUserAccounting().setLogoutDate(format.parse(commandLine.getOptionValue("de")));

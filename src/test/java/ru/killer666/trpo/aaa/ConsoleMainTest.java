@@ -1,6 +1,5 @@
 package ru.killer666.trpo.aaa;
 
-import junit.framework.TestCase;
 import org.junit.Test;
 
 import java.io.File;
@@ -9,7 +8,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Scanner;
 
-public class ConsoleMainTest extends TestCase {
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+public class ConsoleMainTest {
 
     private ConsoleMain consoleMain = new ConsoleMain();
 
@@ -18,7 +20,7 @@ public class ConsoleMainTest extends TestCase {
         boolean tableExists = false;
 
         try {
-            Statement statement = UserController.db.getConnection().createStatement();
+            Statement statement = new UserController().getDb().getConnection().createStatement();
             statement.executeQuery("SELECT * FROM `users`");
             statement.executeQuery("SELECT * FROM `accounting`");
             statement.executeQuery("SELECT * FROM `resources`");
@@ -42,7 +44,7 @@ public class ConsoleMainTest extends TestCase {
 
     private void createTables() throws IOException, SQLException {
 
-        Statement statement = UserController.db.getConnection().createStatement();
+        Statement statement = new UserController().getDb().getConnection().createStatement();
         Scanner scanner = new Scanner(new File("./create_tables.sql"));
         scanner.useDelimiter(";");
 
@@ -55,7 +57,7 @@ public class ConsoleMainTest extends TestCase {
 
     private void fillDataInTables() throws IOException, SQLException {
 
-        Statement statement = UserController.db.getConnection().createStatement();
+        Statement statement = new UserController().getDb().getConnection().createStatement();
         Scanner scanner = new Scanner(new File("./fill_data.sql"));
         scanner.useDelimiter(";");
 
@@ -150,7 +152,7 @@ public class ConsoleMainTest extends TestCase {
 
     @Test
     public void testC43() {
-        ResultCode result = this.consoleMain.work(new String[]{"-login", "jdoe", "-pass", "sup3rpaZZ", "-role", "READ", "-res", "a.b", "-ds", "2015-01-01", "-de", "2015-12-31", "-vol", "100"});
+        ResultCode result = this.consoleMain.work(new String[]{"-login", "jdoe", "-pass", "sup3rpaZZ", "-role", "READ", "-res", "a.b", "-ds", "2015-01-01", "-de", "2015-12-31", "-vol", "XXX"});
         assertEquals(ResultCode.INCORRECTACTIVITY, result);
     }
 }

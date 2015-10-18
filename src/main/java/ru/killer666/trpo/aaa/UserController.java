@@ -18,6 +18,7 @@ public class UserController {
     private Accounting logOnUserAccounting = null;
     private Connection currentConnection = null;
 
+    @Getter
     Database db = new Database(DatabaseConfig.host, DatabaseConfig.port, DatabaseConfig.database, DatabaseConfig.userName, DatabaseConfig.password);
 
     private Connection getConnection() {
