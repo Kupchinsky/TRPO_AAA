@@ -157,7 +157,7 @@ public class UserController {
             }
 
             this.logOnUser = new User(resultUser.getInt("id"), resultUser.getString("login"), resultUser.getString("passwordHash"), resultUser.getString("salt"), resultUser.getString("personName"));
-            this.logger.info("Authorized as user " + this.logOnUser.getLogin() + " (" + this.logOnUser.getPasswordHash() + ")");
+            this.logger.info("Authorized as user " + this.logOnUser.getLogin() + " (" + this.logOnUser.getPersonName() + ")");
         } catch (SQLException e) {
             this.logger.log(Level.SEVERE, "Authorizing user failed!", e);
         }
