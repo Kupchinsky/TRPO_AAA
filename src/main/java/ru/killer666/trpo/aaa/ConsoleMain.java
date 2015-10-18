@@ -28,8 +28,8 @@ public class ConsoleMain {
         writer.flush();
     }
 
-    private static Option makeOptionWithArgument(String shortName, String longName, String description, boolean isRequired) {
-        Option result = new Option(shortName, longName, true, description);
+    private static Option makeOptionWithArgument(String shortName, String description, boolean isRequired) {
+        Option result = new Option(shortName, true, description);
         result.setArgs(1);
         result.setRequired(isRequired);
 
@@ -37,28 +37,30 @@ public class ConsoleMain {
     }
 
     public static void main(String[] args) {
-        Options options = new Options();
-        options.addOption(ConsoleMain.makeOptionWithArgument("l", "login", "Login name", true));
-        options.addOption(ConsoleMain.makeOptionWithArgument("p", "password", "Password", true));
-        options.addOption(ConsoleMain.makeOptionWithArgument("res", "resource", "Resource name", false));
-        options.addOption(ConsoleMain.makeOptionWithArgument("r", "role", "Role", false));
-        options.addOption(ConsoleMain.makeOptionWithArgument("sd", "start-date", "Start date", false));
-        options.addOption(ConsoleMain.makeOptionWithArgument("ed", "end-date", "End date", false));
-        options.addOption(ConsoleMain.makeOptionWithArgument("vol", "volume", "Volume", false));
+        Options options = new Options()
+                .addOption(ConsoleMain.makeOptionWithArgument("login","Login name", true))
+                .addOption(ConsoleMain.makeOptionWithArgument("pass", "Password", true))
+                .addOption(ConsoleMain.makeOptionWithArgument("res", "Resource name", false))
+                .addOption(ConsoleMain.makeOptionWithArgument("role", "Role", false))
+                .addOption(ConsoleMain.makeOptionWithArgument("ds", "Start date", false))
+                .addOption(ConsoleMain.makeOptionWithArgument("de", "End date", false))
+                .addOption(ConsoleMain.makeOptionWithArgument("vol", "Volume", false));
+
+        ResultCodes resultCode = ResultCodes.INVALIDINPUT;
 
         try {
             CommandLine commandLine = new DefaultParser().parse(options, args);
             UserController controller = new UserController();
 
             // Auth user
-            controller.authUser(commandLine.getOptionValue("l"), commandLine.getOptionValue("p"));
+            controller.authUser(commandLine.getOptionValue("login"), commandLine.getOptionValue("pass"));
 
             if (commandLine.hasOption("res")) {
-                if (!commandLine.hasOption("r"))
-                    throw new MissingOptionException("Option not found: -r,--role");
+                if (!commandLine.hasOption("role"))
+                    throw new MissingOptionException("Option not found: -role,--role");
 
                 // Get role and create accounting
-                Role role = Role.valueOf(commandLine.getOptionValue("r"));
+                Role role = Role.valueOf(commandLine.getOptionValue("role"));
 
                 if (role == null)
                     throw new Role.InvalidRoleException();
@@ -68,23 +70,23 @@ public class ConsoleMain {
                 // Auth resource
                 controller.authResource(commandLine.getOptionValue("res"));
 
-                boolean hasSd = commandLine.hasOption("sd");
-                boolean hasEd = commandLine.hasOption("ed");
+                boolean hasSd = commandLine.hasOption("ds");
+                boolean hasEd = commandLine.hasOption("de");
                 boolean hasVol = commandLine.hasOption("vol");
 
                 if (hasSd || hasEd || hasVol) {
 
                     if (!hasSd)
-                        throw new MissingOptionException("Option not found: -sd,--start-date");
+                        throw new MissingOptionException("Option not found: -ds,--start-date");
                     else if (!hasEd)
-                        throw new MissingOptionException("Option not found: -ed,--end-date");
+                        throw new MissingOptionException("Option not found: -de,--end-date");
                     else if (!hasVol)
                         throw new MissingOptionException("Option not found: -vol,--volume");
 
-                    DateFormat format = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss", Locale.ENGLISH);
+                    DateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
 
-                    controller.getLogOnUserAccounting().setLoginDate(format.parse(commandLine.getOptionValue("sd")));
-                    controller.getLogOnUserAccounting().setLogoutDate(format.parse(commandLine.getOptionValue("ed")));
+                    controller.getLogOnUserAccounting().setLoginDate(format.parse(commandLine.getOptionValue("ds")));
+                    controller.getLogOnUserAccounting().setLogoutDate(format.parse(commandLine.getOptionValue("de")));
                     controller.getLogOnUserAccounting().setVolume(Integer.parseInt(commandLine.getOptionValue("vol")));
 
                     if (controller.getLogOnUserAccounting().getVolume() <= 0)
@@ -95,26 +97,26 @@ public class ConsoleMain {
             }
 
             controller.clearAll();
-
-            System.exit(0);
+            resultCode = ResultCodes.SUCCESS;
         } catch (ParseException e) {
             ConsoleMain.printHelp(options);
-            System.exit(255);
         } catch (UserController.UserNotFoundException e) {
             e.printStackTrace();
-            System.exit(1);
+            resultCode = ResultCodes.USERNOTFOUND;
         } catch (UserController.IncorrectPasswordException e) {
             e.printStackTrace();
-            System.exit(2);
+            resultCode = ResultCodes.INCORRECTPASSWORD;
         } catch (Role.InvalidRoleException e) {
             e.printStackTrace();
-            System.exit(3);
+            resultCode = ResultCodes.INVALIDROLE;
         } catch (UserController.ResourceNotFoundException | UserController.ResourceDeniedException e) {
             e.printStackTrace();
-            System.exit(4);
+            resultCode = ResultCodes.RESOURCEDENIED;
         } catch (java.text.ParseException | NumberFormatException e) {
             e.printStackTrace();
-            System.exit(5);
+            resultCode = ResultCodes.INCORRECTACTIVITY;
         }
+
+        System.exit(resultCode.getValue());
     }
 }
