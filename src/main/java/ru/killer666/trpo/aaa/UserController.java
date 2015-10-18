@@ -18,12 +18,12 @@ public class UserController {
     private Accounting logOnUserAccounting = null;
     private Connection currentConnection = null;
 
-    static Database db = new Database(DatabaseConfig.host, DatabaseConfig.port, DatabaseConfig.database, DatabaseConfig.userName, DatabaseConfig.password);
+    Database db = new Database(DatabaseConfig.host, DatabaseConfig.port, DatabaseConfig.database, DatabaseConfig.userName, DatabaseConfig.password);
 
     private Connection getConnection() {
         if (this.currentConnection == null) {
             try {
-                this.currentConnection = UserController.db.getConnection();
+                this.currentConnection = this.db.getConnection();
             } catch (SQLException e) {
                 e.printStackTrace();
             }
@@ -40,7 +40,7 @@ public class UserController {
             e.printStackTrace();
         }
 
-        UserController.db.closePool();
+        this.db.closePool();
     }
 
     private String encryptPassword(String password, String salt) {
@@ -109,7 +109,7 @@ public class UserController {
             this.logOnUserAccounting.getResources().add(lastParentResource);
 
             while (true) {
-                preparedStatement = UserController.db.getConnection().prepareStatement("SELECT * FROM `resources` WHERE `parent_resource_id`=?");
+                preparedStatement = this.db.getConnection().prepareStatement("SELECT * FROM `resources` WHERE `parent_resource_id`=?");
                 preparedStatement.setInt(1, lastParentResource.getDatabaseId());
 
                 ResultSet resultChildResource = preparedStatement.executeQuery();

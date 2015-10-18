@@ -3,8 +3,11 @@ package ru.killer666.trpo.aaa;
 import junit.framework.TestCase;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Scanner;
 
 public class ConsoleMainTest extends TestCase {
 
@@ -26,7 +29,41 @@ public class ConsoleMainTest extends TestCase {
         } catch (SQLException e) {
         }
 
-        assertTrue("Table not exists in database!", tableExists);
+        if (!tableExists) {
+            try {
+                createTables();
+                fillDataInTables();
+            } catch (IOException | SQLException e) {
+                e.printStackTrace();
+                fail("Table not exists in database!");
+            }
+        }
+    }
+
+    private void createTables() throws IOException, SQLException {
+
+        Statement statement = UserController.db.getConnection().createStatement();
+        Scanner scanner = new Scanner(new File("./create_tables.sql"));
+        scanner.useDelimiter(";");
+
+        while (scanner.hasNext())
+            statement.addBatch(scanner.next());
+
+        scanner.close();
+        statement.executeBatch();
+    }
+
+    private void fillDataInTables() throws IOException, SQLException {
+
+        Statement statement = UserController.db.getConnection().createStatement();
+        Scanner scanner = new Scanner(new File("./fill_data.sql"));
+        scanner.useDelimiter(";");
+
+        while (scanner.hasNext())
+            statement.addBatch(scanner.next());
+
+        scanner.close();
+        statement.executeBatch();
     }
 
     /* C1 */
