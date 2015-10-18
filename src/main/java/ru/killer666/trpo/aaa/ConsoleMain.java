@@ -3,10 +3,16 @@ package ru.killer666.trpo.aaa;
 import org.apache.commons.cli.*;
 import ru.killer666.trpo.aaa.models.Role;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Locale;
+import java.util.logging.FileHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 public class ConsoleMain {
 
@@ -47,10 +53,21 @@ public class ConsoleMain {
                 .addOption(this.makeOptionWithArgument("vol", "Volume", false));
 
         UserController controller = null;
+        Logger logger = null;
 
         try {
             CommandLine commandLine = new DefaultParser().parse(options, args);
             controller = new UserController();
+            logger = controller.getLogger();
+
+            // Logger to file initialize
+            try {
+                FileHandler fileHandler = new FileHandler("aaa.log", true);
+                fileHandler.setFormatter(new SimpleFormatter());
+                logger.addHandler(fileHandler);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
             // Auth user
             controller.authUser(commandLine.getOptionValue("login"), commandLine.getOptionValue("pass"));
@@ -60,14 +77,13 @@ public class ConsoleMain {
                     throw new MissingOptionException("Option not found: -role,--role");
 
                 // Get role and create accounting
+                String strRole = commandLine.getOptionValue("role");
                 Role role = null;
                 try {
-                    role = Role.valueOf(commandLine.getOptionValue("role"));
+                    role = Role.valueOf(strRole);
                 } catch (IllegalArgumentException e) {
+                    throw new Role.InvalidRoleException(strRole);
                 }
-
-                if (role == null)
-                    throw new Role.InvalidRoleException();
 
                 controller.createAccounting(role);
 
@@ -109,19 +125,20 @@ public class ConsoleMain {
             ConsoleMain.printHelp(options);
             return ResultCode.INVALIDINPUT;
         } catch (UserController.UserNotFoundException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "User " + e.getCauseUserName() + " not found in database!", e);
             return ResultCode.USERNOTFOUND;
         } catch (UserController.IncorrectPasswordException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Incorrect password " + e.getCausePassword() + " for user " + e.getCauseUserName() + "!", e);
             return ResultCode.INCORRECTPASSWORD;
         } catch (Role.InvalidRoleException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Invalid role: " + e.getCauseStr() + ". Valid values are: " + Arrays.deepToString(Role.values()), e);
             return ResultCode.INVALIDROLE;
         } catch (UserController.ResourceNotFoundException | UserController.ResourceDeniedException e) {
-            e.printStackTrace();
+            logger.log(Level.SEVERE, "Resource " + e.getCauseResource() + (e instanceof UserController.ResourceNotFoundException ? " not found" : " denied for user " + e.getCauseUserName() + "!"), e);
             return ResultCode.RESOURCEDENIED;
         } catch (java.text.ParseException | NumberFormatException e) {
-            e.printStackTrace();
+            if (logger != null)
+                logger.log(Level.SEVERE, "Incorrect activity for " + (e instanceof NumberFormatException ? "volume" : "start date or end date"), e);
             return ResultCode.INCORRECTACTIVITY;
         } finally {
             if (controller != null)

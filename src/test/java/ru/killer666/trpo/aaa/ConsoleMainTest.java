@@ -17,27 +17,27 @@ public class ConsoleMainTest {
 
     @Test
     public void testDatabase() {
-        boolean tableExists = false;
+        boolean tablesExists = false;
 
         try {
             Statement statement = new UserController().getDb().getConnection().createStatement();
-            statement.executeQuery("SELECT * FROM `users`");
-            statement.executeQuery("SELECT * FROM `accounting`");
-            statement.executeQuery("SELECT * FROM `resources`");
-            statement.executeQuery("SELECT * FROM `resources_users`");
-            statement.executeQuery("SELECT * FROM `accounting_resources`");
+            statement.executeQuery("SELECT COUNT(*) FROM `users`");
+            statement.executeQuery("SELECT COUNT(*) FROM `accounting`");
+            statement.executeQuery("SELECT COUNT(*) FROM `resources`");
+            statement.executeQuery("SELECT COUNT(*) FROM `resources_users`");
+            statement.executeQuery("SELECT COUNT(*) FROM `accounting_resources`");
 
-            tableExists = true;
+            tablesExists = true;
         } catch (SQLException e) {
         }
 
-        if (!tableExists) {
+        if (!tablesExists) {
             try {
-                createTables();
-                fillDataInTables();
+                this.createTables();
+                this.fillDataInTables();
             } catch (IOException | SQLException e) {
                 e.printStackTrace();
-                fail("Table not exists in database!");
+                fail("Table(s) not exists in database!");
             }
         }
     }

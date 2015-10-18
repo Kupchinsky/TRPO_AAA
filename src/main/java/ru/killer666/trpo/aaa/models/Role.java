@@ -1,5 +1,6 @@
 package ru.killer666.trpo.aaa.models;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
 
@@ -24,9 +25,12 @@ public enum Role {
                 return EXECUTE;
         }
 
-        throw new InvalidRoleException();
+        throw new InvalidRoleException(null);
     }
 
+    @AllArgsConstructor
     public static class InvalidRoleException extends Exception {
+        @Getter
+        private String causeStr;
     }
 }

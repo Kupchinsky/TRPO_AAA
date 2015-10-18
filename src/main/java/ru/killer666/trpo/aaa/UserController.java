@@ -2,6 +2,7 @@ package ru.killer666.trpo.aaa;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import org.apache.commons.codec.digest.DigestUtils;
 import ru.killer666.trpo.aaa.models.Accounting;
 import ru.killer666.trpo.aaa.models.Resource;
@@ -10,6 +11,8 @@ import ru.killer666.trpo.aaa.models.User;
 
 import java.sql.*;
 import java.util.Calendar;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class UserController {
     @Getter
@@ -19,14 +22,17 @@ public class UserController {
     private Connection currentConnection = null;
 
     @Getter
-    Database db = new Database(DatabaseConfig.host, DatabaseConfig.port, DatabaseConfig.database, DatabaseConfig.userName, DatabaseConfig.password);
+    final Database db = new Database(DatabaseConfig.host, DatabaseConfig.port, DatabaseConfig.database, DatabaseConfig.userName, DatabaseConfig.password);
+
+    @Getter
+    final Logger logger = Logger.getLogger(UserController.class.getSimpleName());
 
     private Connection getConnection() {
         if (this.currentConnection == null) {
             try {
                 this.currentConnection = this.db.getConnection();
             } catch (SQLException e) {
-                e.printStackTrace();
+                this.logger.log(Level.SEVERE, "Get connection failed!", e);
             }
         }
 
@@ -38,7 +44,7 @@ public class UserController {
             if (this.currentConnection != null)
                 this.currentConnection.close();
         } catch (SQLException e) {
-            e.printStackTrace();
+            this.logger.log(Level.SEVERE, "Close resources failed!", e);
         }
 
         this.db.closePool();
@@ -60,7 +66,7 @@ public class UserController {
             ResultSet resultResource = preparedStatement.executeQuery();
 
             if (!resultResource.first()) {
-                throw new ResourceNotFoundException();
+                throw new ResourceNotFoundException(resourceName);
             }
 
             // Checking resource access
@@ -102,7 +108,7 @@ public class UserController {
             }
 
             if (!accessGranted) {
-                throw new ResourceDeniedException();
+                throw new ResourceDeniedException(resourceName, this.logOnUser.getLogin());
             }
 
             // Finding all child resources
@@ -124,9 +130,10 @@ public class UserController {
 
                 lastParentResource = newResource;
             }
+
+            this.logger.info("Authorized on resource " + resourceName);
         } catch (SQLException e) {
-            // Error while working
-            e.printStackTrace();
+            this.logger.log(Level.SEVERE, "Authorizing resource failed!", e);
         }
     }
 
@@ -141,18 +148,18 @@ public class UserController {
             ResultSet resultUser = preparedStatement.executeQuery();
 
             if (!resultUser.first()) {
-                throw new UserNotFoundException();
+                throw new UserNotFoundException(userName);
             }
 
             // Checking password
             if (!this.encryptPassword(password, resultUser.getString("salt")).equals(resultUser.getString("passwordHash"))) {
-                throw new IncorrectPasswordException();
+                throw new IncorrectPasswordException(userName, password);
             }
 
             this.logOnUser = new User(resultUser.getInt("id"), resultUser.getString("login"), resultUser.getString("passwordHash"), resultUser.getString("salt"), resultUser.getString("personName"));
+            this.logger.info("Authorized as user " + this.logOnUser.getLogin() + " (" + this.logOnUser.getPasswordHash() + ")");
         } catch (SQLException e) {
-            // Error while working
-            e.printStackTrace();
+            this.logger.log(Level.SEVERE, "Authorizing user failed!", e);
         }
     }
 
@@ -206,13 +213,12 @@ public class UserController {
             this.logOnUserAccounting = null;
             this.logOnUser = null;
         } catch (SQLException e) {
-            // Error while working
-            e.printStackTrace();
+            this.logger.log(Level.SEVERE, "Save accounting failed!", e);
 
             try {
                 connection.rollback();
             } catch (SQLException e1) {
-                e1.printStackTrace();
+                this.logger.log(Level.SEVERE, "Rollback wrongly saved accounting failed!", e1);
             }
         }
     }
@@ -222,15 +228,43 @@ public class UserController {
         this.logOnUser = null;
     }
 
-    public static class UserNotFoundException extends Exception {
+    public static abstract class ExceptionData extends Exception {
+        @Getter
+        @Setter
+        private String causeUserName = null;
+
+        @Getter
+        @Setter
+        private String causePassword = null;
+
+        @Getter
+        @Setter
+        private String causeResource = null;
     }
 
-    public static class IncorrectPasswordException extends Exception {
+    public static class UserNotFoundException extends ExceptionData {
+        public UserNotFoundException(String userName) {
+            this.setCauseUserName(userName);
+        }
     }
 
-    public static class ResourceDeniedException extends Exception {
+    public static class IncorrectPasswordException extends ExceptionData {
+        public IncorrectPasswordException(String userName, String password) {
+            this.setCauseUserName(userName);
+            this.setCausePassword(password);
+        }
     }
 
-    public static class ResourceNotFoundException extends Exception {
+    public static class ResourceDeniedException extends ExceptionData {
+        public ResourceDeniedException(String resourceName, String userName) {
+            this.setCauseResource(resourceName);
+            this.setCauseUserName(userName);
+        }
+    }
+
+    public static class ResourceNotFoundException extends ExceptionData {
+        public ResourceNotFoundException(String resourceName) {
+            this.setCauseResource(resourceName);
+        }
     }
 }
