@@ -28,7 +28,7 @@ public class ConsoleMain {
         writer.flush();
     }
 
-    private static Option makeOptionWithArgument(String shortName, String description, boolean isRequired) {
+    private Option makeOptionWithArgument(String shortName, String description, boolean isRequired) {
         Option result = new Option(shortName, true, description);
         result.setArgs(1);
         result.setRequired(isRequired);
@@ -36,17 +36,15 @@ public class ConsoleMain {
         return result;
     }
 
-    public static void main(String[] args) {
+    public ResultCode work(String[] args) {
         Options options = new Options()
-                .addOption(ConsoleMain.makeOptionWithArgument("login","Login name", true))
-                .addOption(ConsoleMain.makeOptionWithArgument("pass", "Password", true))
-                .addOption(ConsoleMain.makeOptionWithArgument("res", "Resource name", false))
-                .addOption(ConsoleMain.makeOptionWithArgument("role", "Role", false))
-                .addOption(ConsoleMain.makeOptionWithArgument("ds", "Start date", false))
-                .addOption(ConsoleMain.makeOptionWithArgument("de", "End date", false))
-                .addOption(ConsoleMain.makeOptionWithArgument("vol", "Volume", false));
-
-        ResultCodes resultCode = ResultCodes.INVALIDINPUT;
+                .addOption(this.makeOptionWithArgument("login", "Login name", true))
+                .addOption(this.makeOptionWithArgument("pass", "Password", true))
+                .addOption(this.makeOptionWithArgument("res", "Resource name", false))
+                .addOption(this.makeOptionWithArgument("role", "Role", false))
+                .addOption(this.makeOptionWithArgument("ds", "Start date", false))
+                .addOption(this.makeOptionWithArgument("de", "End date", false))
+                .addOption(this.makeOptionWithArgument("vol", "Volume", false));
 
         try {
             CommandLine commandLine = new DefaultParser().parse(options, args);
@@ -89,6 +87,9 @@ public class ConsoleMain {
                     controller.getLogOnUserAccounting().setLogoutDate(format.parse(commandLine.getOptionValue("de")));
                     controller.getLogOnUserAccounting().setVolume(Integer.parseInt(commandLine.getOptionValue("vol")));
 
+                    if (!controller.getLogOnUserAccounting().getLoginDate().before(controller.getLogOnUserAccounting().getLogoutDate()))
+                        throw new NumberFormatException("Incorrect login or logout dates!");
+
                     if (controller.getLogOnUserAccounting().getVolume() <= 0)
                         throw new NumberFormatException("Invalid volume number!");
                 }
@@ -97,26 +98,31 @@ public class ConsoleMain {
             }
 
             controller.clearAll();
-            resultCode = ResultCodes.SUCCESS;
         } catch (ParseException e) {
             ConsoleMain.printHelp(options);
+            return ResultCode.INVALIDINPUT;
         } catch (UserController.UserNotFoundException e) {
             e.printStackTrace();
-            resultCode = ResultCodes.USERNOTFOUND;
+            return ResultCode.USERNOTFOUND;
         } catch (UserController.IncorrectPasswordException e) {
             e.printStackTrace();
-            resultCode = ResultCodes.INCORRECTPASSWORD;
+            return ResultCode.INCORRECTPASSWORD;
         } catch (Role.InvalidRoleException e) {
             e.printStackTrace();
-            resultCode = ResultCodes.INVALIDROLE;
+            return ResultCode.INVALIDROLE;
         } catch (UserController.ResourceNotFoundException | UserController.ResourceDeniedException e) {
             e.printStackTrace();
-            resultCode = ResultCodes.RESOURCEDENIED;
+            return ResultCode.RESOURCEDENIED;
         } catch (java.text.ParseException | NumberFormatException e) {
             e.printStackTrace();
-            resultCode = ResultCodes.INCORRECTACTIVITY;
+            return ResultCode.INCORRECTACTIVITY;
         }
 
-        System.exit(resultCode.getValue());
+        return ResultCode.SUCCESS;
+    }
+
+    public static void main(String[] args) {
+        ResultCode result = new ConsoleMain().work(args);
+        System.exit(result.getValue());
     }
 }
