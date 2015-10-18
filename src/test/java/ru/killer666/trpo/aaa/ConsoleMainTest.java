@@ -2,71 +2,11 @@ package ru.killer666.trpo.aaa;
 
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.Scanner;
-
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 public class ConsoleMainTest {
 
     private ConsoleMain consoleMain = new ConsoleMain();
-
-    @Test
-    public void testDatabase() {
-        boolean tablesExists = false;
-
-        try {
-            Statement statement = new UserController().getDb().getConnection().createStatement();
-            statement.executeQuery("SELECT COUNT(*) FROM `users`");
-            statement.executeQuery("SELECT COUNT(*) FROM `accounting`");
-            statement.executeQuery("SELECT COUNT(*) FROM `resources`");
-            statement.executeQuery("SELECT COUNT(*) FROM `resources_users`");
-            statement.executeQuery("SELECT COUNT(*) FROM `accounting_resources`");
-
-            tablesExists = true;
-        } catch (SQLException e) {
-        }
-
-        if (!tablesExists) {
-            try {
-                this.createTables();
-                this.fillDataInTables();
-            } catch (IOException | SQLException e) {
-                e.printStackTrace();
-                fail("Table(s) not exists in database!");
-            }
-        }
-    }
-
-    private void createTables() throws IOException, SQLException {
-
-        Statement statement = new UserController().getDb().getConnection().createStatement();
-        Scanner scanner = new Scanner(new File("./create_tables.sql"));
-        scanner.useDelimiter(";");
-
-        while (scanner.hasNext())
-            statement.addBatch(scanner.next());
-
-        scanner.close();
-        statement.executeBatch();
-    }
-
-    private void fillDataInTables() throws IOException, SQLException {
-
-        Statement statement = new UserController().getDb().getConnection().createStatement();
-        Scanner scanner = new Scanner(new File("./fill_data.sql"));
-        scanner.useDelimiter(";");
-
-        while (scanner.hasNext())
-            statement.addBatch(scanner.next());
-
-        scanner.close();
-        statement.executeBatch();
-    }
 
     /* C1 */
     @Test
