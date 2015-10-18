@@ -46,9 +46,11 @@ public class ConsoleMain {
                 .addOption(this.makeOptionWithArgument("de", "End date", false))
                 .addOption(this.makeOptionWithArgument("vol", "Volume", false));
 
+        UserController controller = null;
+
         try {
             CommandLine commandLine = new DefaultParser().parse(options, args);
-            UserController controller = new UserController();
+            controller = new UserController();
 
             // Auth user
             controller.authUser(commandLine.getOptionValue("login"), commandLine.getOptionValue("pass"));
@@ -116,6 +118,9 @@ public class ConsoleMain {
         } catch (java.text.ParseException | NumberFormatException e) {
             e.printStackTrace();
             return ResultCode.INCORRECTACTIVITY;
+        } finally {
+            if (controller != null)
+                controller.closeResources();
         }
 
         return ResultCode.SUCCESS;

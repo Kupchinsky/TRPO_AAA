@@ -18,7 +18,7 @@ public class UserController {
     private Accounting logOnUserAccounting = null;
     private Connection currentConnection = null;
 
-    private static Database db = new Database(DatabaseConfig.host, DatabaseConfig.port, DatabaseConfig.database, DatabaseConfig.userName, DatabaseConfig.password);
+    static Database db = new Database(DatabaseConfig.host, DatabaseConfig.port, DatabaseConfig.database, DatabaseConfig.userName, DatabaseConfig.password);
 
     private Connection getConnection() {
         if (this.currentConnection == null) {
@@ -30,6 +30,17 @@ public class UserController {
         }
 
         return this.currentConnection;
+    }
+
+    public void closeResources() {
+        try {
+            if (this.currentConnection != null)
+                this.currentConnection.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        UserController.db.closePool();
     }
 
     private String encryptPassword(String password, String salt) {
