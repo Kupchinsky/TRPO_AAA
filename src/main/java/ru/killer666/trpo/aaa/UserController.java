@@ -25,7 +25,7 @@ public class UserController {
     final Database db = new Database(DatabaseConfig.host, DatabaseConfig.port, DatabaseConfig.database, DatabaseConfig.userName, DatabaseConfig.password);
 
     @Getter
-    final Logger logger = Logger.getLogger(UserController.class.getSimpleName());
+    final Logger logger = Logger.getLogger(UserController.class.getName());
 
     private Connection getConnection() {
         if (this.currentConnection == null) {

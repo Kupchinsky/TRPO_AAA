@@ -9,10 +9,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Locale;
-import java.util.logging.FileHandler;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
+import java.util.logging.*;
 
 public class ConsoleMain {
 
@@ -143,6 +140,12 @@ public class ConsoleMain {
         } finally {
             if (controller != null)
                 controller.closeResources();
+            if (logger != null) {
+                for (Handler handler : logger.getHandlers()) {
+                    if (handler instanceof FileHandler)
+                        handler.close();
+                }
+            }
         }
 
         return ResultCode.SUCCESS;
