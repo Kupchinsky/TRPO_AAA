@@ -11,13 +11,22 @@ public class ConsoleMainTest extends TestCase {
     private ConsoleMain consoleMain = new ConsoleMain();
 
     @Test
-    public void testDatabase() throws SQLException {
-        Statement statement = UserController.db.getConnection().createStatement();
-        statement.executeQuery("SELECT * FROM `users`");
-        statement.executeQuery("SELECT * FROM `accounting`");
-        statement.executeQuery("SELECT * FROM `resources`");
-        statement.executeQuery("SELECT * FROM `resources_users`");
-        statement.executeQuery("SELECT * FROM `accounting_resources`");
+    public void testDatabase() {
+        boolean tableExists = false;
+
+        try {
+            Statement statement = UserController.db.getConnection().createStatement();
+            statement.executeQuery("SELECT * FROM `users`");
+            statement.executeQuery("SELECT * FROM `accounting`");
+            statement.executeQuery("SELECT * FROM `resources`");
+            statement.executeQuery("SELECT * FROM `resources_users`");
+            statement.executeQuery("SELECT * FROM `accounting_resources`");
+
+            tableExists = true;
+        } catch (SQLException e) {
+        }
+
+        assertTrue("Table not exists in database!", tableExists);
     }
 
     /* C1 */
