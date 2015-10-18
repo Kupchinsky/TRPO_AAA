@@ -3,9 +3,22 @@ package ru.killer666.trpo.aaa;
 import junit.framework.TestCase;
 import org.junit.Test;
 
+import java.sql.SQLException;
+import java.sql.Statement;
+
 public class ConsoleMainTest extends TestCase {
 
     private ConsoleMain consoleMain = new ConsoleMain();
+
+    @Test
+    public void testDatabase() throws SQLException {
+        Statement statement = UserController.db.getConnection().createStatement();
+        statement.executeQuery("SELECT * FROM `users`");
+        statement.executeQuery("SELECT * FROM `accounting`");
+        statement.executeQuery("SELECT * FROM `resources`");
+        statement.executeQuery("SELECT * FROM `resources_users`");
+        statement.executeQuery("SELECT * FROM `accounting_resources`");
+    }
 
     /* C1 */
     @Test
