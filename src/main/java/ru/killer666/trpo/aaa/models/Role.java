@@ -4,6 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @ToString
 public enum Role {
     READ(1), WRITE(2), EXECUTE(4);
@@ -15,17 +18,13 @@ public enum Role {
         this.value = value;
     }
 
-    public static Role fromInt(int x) throws InvalidRoleException {
-        switch (x) {
-            case 1:
-                return READ;
-            case 2:
-                return WRITE;
-            case 4:
-                return EXECUTE;
-        }
+    public static String asList() {
+        List<String> result = new ArrayList<>();
 
-        throw new InvalidRoleException(null);
+        for (Role role : Role.values())
+            result.add(role.name());
+
+        return String.join(", ", result);
     }
 
     @AllArgsConstructor

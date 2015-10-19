@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Locale;
 import java.util.logging.*;
 
@@ -128,7 +127,7 @@ public class ConsoleMain {
             logger.log(Level.SEVERE, "Incorrect password " + e.getCausePassword() + " for user " + e.getCauseUserName() + "!", e);
             return ResultCode.INCORRECTPASSWORD;
         } catch (Role.InvalidRoleException e) {
-            logger.log(Level.SEVERE, "Invalid role: " + e.getCauseStr() + ". Valid values are: " + Arrays.deepToString(Role.values()), e);
+            logger.log(Level.SEVERE, "Invalid role: " + e.getCauseStr() + ". Valid values are: " + Role.asList(), e);
             return ResultCode.INVALIDROLE;
         } catch (UserController.ResourceNotFoundException | UserController.ResourceDeniedException e) {
             logger.log(Level.SEVERE, "Resource " + e.getCauseResource() + (e instanceof UserController.ResourceNotFoundException ? " not found" : " denied for user " + e.getCauseUserName() + "!"), e);
