@@ -1,14 +1,17 @@
 package ru.killer666.trpo.aaa;
 
 import lombok.Getter;
-import lombok.Setter;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import ru.killer666.trpo.aaa.models.Accounting;
-import ru.killer666.trpo.aaa.models.Resource;
-import ru.killer666.trpo.aaa.models.Role;
-import ru.killer666.trpo.aaa.models.User;
+import ru.killer666.trpo.aaa.domains.Accounting;
+import ru.killer666.trpo.aaa.domains.Resource;
+import ru.killer666.trpo.aaa.domains.Role;
+import ru.killer666.trpo.aaa.domains.User;
+import ru.killer666.trpo.aaa.exceptions.IncorrectPasswordException;
+import ru.killer666.trpo.aaa.exceptions.ResourceDeniedException;
+import ru.killer666.trpo.aaa.exceptions.ResourceNotFoundException;
+import ru.killer666.trpo.aaa.exceptions.UserNotFoundException;
 
 import java.sql.*;
 import java.util.Calendar;
@@ -198,45 +201,5 @@ public class UserController implements AutoCloseable {
     public void close() {
         UserController.logger.debug("Closing resources");
         this.db.closePool();
-    }
-
-    public static abstract class ExceptionData extends Exception {
-        @Getter
-        @Setter
-        private String causeUserName = null;
-
-        @Getter
-        @Setter
-        private String causePassword = null;
-
-        @Getter
-        @Setter
-        private String causeResource = null;
-    }
-
-    public static class UserNotFoundException extends ExceptionData {
-        public UserNotFoundException(String userName) {
-            this.setCauseUserName(userName);
-        }
-    }
-
-    public static class IncorrectPasswordException extends ExceptionData {
-        public IncorrectPasswordException(String userName, String password) {
-            this.setCauseUserName(userName);
-            this.setCausePassword(password);
-        }
-    }
-
-    public static class ResourceDeniedException extends ExceptionData {
-        public ResourceDeniedException(String resourceName, String userName) {
-            this.setCauseResource(resourceName);
-            this.setCauseUserName(userName);
-        }
-    }
-
-    public static class ResourceNotFoundException extends ExceptionData {
-        public ResourceNotFoundException(String resourceName) {
-            this.setCauseResource(resourceName);
-        }
     }
 }

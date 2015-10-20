@@ -1,4 +1,4 @@
-package ru.killer666.trpo.aaa.models;
+package ru.killer666.trpo.aaa.domains;
 
 import lombok.Data;
 import lombok.NonNull;

@@ -3,7 +3,8 @@ package ru.killer666.trpo.aaa;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import ru.killer666.trpo.aaa.models.Role;
+import ru.killer666.trpo.aaa.domains.Role;
+import ru.killer666.trpo.aaa.exceptions.*;
 
 import java.io.PrintWriter;
 import java.sql.SQLException;
@@ -69,7 +70,7 @@ public class ConsoleMain {
                 try {
                     role = Role.valueOf(strRole);
                 } catch (IllegalArgumentException e) {
-                    throw new Role.InvalidRoleException(strRole);
+                    throw new InvalidRoleException(strRole);
                 }
 
                 controller.createAccounting(role);
@@ -111,17 +112,17 @@ public class ConsoleMain {
         } catch (ParseException e) {
             ConsoleMain.printHelp(options);
             return ResultCode.INVALIDINPUT;
-        } catch (UserController.UserNotFoundException e) {
+        } catch (UserNotFoundException e) {
             ConsoleMain.logger.warn("User {} not found in database!", e.getCauseUserName());
             return ResultCode.USERNOTFOUND;
-        } catch (UserController.IncorrectPasswordException e) {
+        } catch (IncorrectPasswordException e) {
             ConsoleMain.logger.warn("Incorrect password {} for user {}!", e.getCausePassword(), e.getCauseUserName());
             return ResultCode.INCORRECTPASSWORD;
-        } catch (Role.InvalidRoleException e) {
+        } catch (InvalidRoleException e) {
             ConsoleMain.logger.warn("Invalid role: {}. Valid values are: {}", e.getCauseStr(), Role.asList());
             return ResultCode.INVALIDROLE;
-        } catch (UserController.ResourceNotFoundException | UserController.ResourceDeniedException e) {
-            ConsoleMain.logger.warn("Resource {} {} for user {}!", e.getCauseResource(), e instanceof UserController.ResourceNotFoundException ? "not found" : "denied", e.getCauseUserName());
+        } catch (ResourceNotFoundException | ResourceDeniedException e) {
+            ConsoleMain.logger.warn("Resource {} {} for user {}!", e.getCauseResource(), e instanceof ResourceNotFoundException ? "not found" : "denied", e.getCauseUserName());
             return ResultCode.RESOURCEDENIED;
         } catch (java.text.ParseException | NumberFormatException e) {
             ConsoleMain.logger.warn("Incorrect activity for {}", e instanceof NumberFormatException ? "volume" : "start date or end date");
