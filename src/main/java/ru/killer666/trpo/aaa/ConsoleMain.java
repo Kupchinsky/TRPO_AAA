@@ -1,16 +1,19 @@
 package ru.killer666.trpo.aaa;
 
 import org.apache.commons.cli.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import ru.killer666.trpo.aaa.models.Role;
 
-import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
-import java.util.logging.*;
 
 public class ConsoleMain {
+
+    private static final Logger logger = LogManager.getLogger(ConsoleMain.class);
 
     private static void printHelp(final Options options) {
         final PrintWriter writer = new PrintWriter(System.out);
@@ -48,22 +51,10 @@ public class ConsoleMain {
                 .addOption(this.makeOptionWithArgument("de", "End date", false))
                 .addOption(this.makeOptionWithArgument("vol", "Volume", false));
 
-        UserController controller = null;
-        Logger logger = null;
-
-        try {
+        try (UserController controller = new UserController()) {
             CommandLine commandLine = new DefaultParser().parse(options, args);
-            controller = new UserController();
-            logger = controller.getLogger();
 
-            // Logger to file initialize
-            try {
-                FileHandler fileHandler = new FileHandler("aaa.log", true);
-                fileHandler.setFormatter(new SimpleFormatter());
-                logger.addHandler(fileHandler);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            ConsoleMain.logger.warn("Started");
 
             // Auth user
             controller.authUser(commandLine.getOptionValue("login"), commandLine.getOptionValue("pass"));
@@ -74,7 +65,7 @@ public class ConsoleMain {
 
                 // Get role and create accounting
                 String strRole = commandLine.getOptionValue("role");
-                Role role = null;
+                Role role;
                 try {
                     role = Role.valueOf(strRole);
                 } catch (IllegalArgumentException e) {
@@ -121,30 +112,23 @@ public class ConsoleMain {
             ConsoleMain.printHelp(options);
             return ResultCode.INVALIDINPUT;
         } catch (UserController.UserNotFoundException e) {
-            logger.log(Level.SEVERE, "User " + e.getCauseUserName() + " not found in database!", e);
+            ConsoleMain.logger.warn("User {} not found in database!", e.getCauseUserName());
             return ResultCode.USERNOTFOUND;
         } catch (UserController.IncorrectPasswordException e) {
-            logger.log(Level.SEVERE, "Incorrect password " + e.getCausePassword() + " for user " + e.getCauseUserName() + "!", e);
+            ConsoleMain.logger.warn("Incorrect password {} for user {}!", e.getCausePassword(), e.getCauseUserName());
             return ResultCode.INCORRECTPASSWORD;
         } catch (Role.InvalidRoleException e) {
-            logger.log(Level.SEVERE, "Invalid role: " + e.getCauseStr() + ". Valid values are: " + Role.asList(), e);
+            ConsoleMain.logger.warn("Invalid role: {}. Valid values are: {}", e.getCauseStr(), Role.asList());
             return ResultCode.INVALIDROLE;
         } catch (UserController.ResourceNotFoundException | UserController.ResourceDeniedException e) {
-            logger.log(Level.SEVERE, "Resource " + e.getCauseResource() + (e instanceof UserController.ResourceNotFoundException ? " not found" : " denied for user " + e.getCauseUserName() + "!"), e);
+            ConsoleMain.logger.warn("Resource {} {} for user {}!", e.getCauseResource(), e instanceof UserController.ResourceNotFoundException ? "not found" : "denied", e.getCauseUserName());
             return ResultCode.RESOURCEDENIED;
         } catch (java.text.ParseException | NumberFormatException e) {
-            if (logger != null)
-                logger.log(Level.SEVERE, "Incorrect activity for " + (e instanceof NumberFormatException ? "volume" : "start date or end date"), e);
+            ConsoleMain.logger.warn("Incorrect activity for {}", e instanceof NumberFormatException ? "volume" : "start date or end date");
             return ResultCode.INCORRECTACTIVITY;
-        } finally {
-            if (controller != null)
-                controller.closeResources();
-            if (logger != null) {
-                for (Handler handler : logger.getHandlers()) {
-                    if (handler instanceof FileHandler)
-                        handler.close();
-                }
-            }
+        } catch (SQLException e) {
+            ConsoleMain.logger.error("Unknown error", e);
+            return ResultCode.UNKNOWNERROR;
         }
 
         return ResultCode.SUCCESS;

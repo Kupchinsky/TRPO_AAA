@@ -1,9 +1,10 @@
 package ru.killer666.trpo.aaa;
 
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import ru.killer666.trpo.aaa.models.Accounting;
 import ru.killer666.trpo.aaa.models.Resource;
 import ru.killer666.trpo.aaa.models.Role;
@@ -11,55 +12,25 @@ import ru.killer666.trpo.aaa.models.User;
 
 import java.sql.*;
 import java.util.Calendar;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-public class UserController {
+public class UserController implements AutoCloseable {
+
+    private static final Logger logger = LogManager.getLogger(UserController.class);
+
     @Getter
     private User logOnUser = null;
     @Getter
     private Accounting logOnUserAccounting = null;
-    private Connection currentConnection = null;
-
-    @Getter
-    final Database db = new Database(DatabaseConfig.userName, DatabaseConfig.password);
-
-    @Getter
-    final Logger logger = Logger.getLogger(UserController.class.getName());
-
-    private Connection getConnection() {
-        if (this.currentConnection == null) {
-            try {
-                this.currentConnection = this.db.getConnection();
-            } catch (SQLException e) {
-                this.logger.log(Level.SEVERE, "Get connection failed!", e);
-            }
-        }
-
-        return this.currentConnection;
-    }
-
-    public void closeResources() {
-        try {
-            if (this.currentConnection != null)
-                this.currentConnection.close();
-        } catch (SQLException e) {
-            this.logger.log(Level.SEVERE, "Close resources failed!", e);
-        }
-
-        this.db.closePool();
-    }
+    private final Database db = new Database(DatabaseConfig.userName, DatabaseConfig.password);
 
     private String encryptPassword(String password, String salt) {
         return DigestUtils.shaHex(DigestUtils.shaHex(password) + salt);
     }
 
-    public void authResource(String resourceName) throws ResourceNotFoundException, ResourceDeniedException {
-        this.authResource(this.getConnection(), resourceName);
-    }
+    public void authResource(String resourceName) throws ResourceNotFoundException, ResourceDeniedException, SQLException {
+        UserController.logger.debug("Authorizing resource");
 
-    private void authResource(@NonNull Connection connection, String resourceName) throws ResourceNotFoundException, ResourceDeniedException {
-        try {
+        try (Connection connection = this.db.getConnection()) {
             // Checking resource exists
             PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM `resources` WHERE `name`=?");
             preparedStatement.setString(1, resourceName);
@@ -131,18 +102,17 @@ public class UserController {
                 lastParentResource = newResource;
             }
 
-            this.logger.info("Authorized on resource " + resourceName);
+            UserController.logger.debug("Authorized on resource " + resourceName);
         } catch (SQLException e) {
-            this.logger.log(Level.SEVERE, "Authorizing resource failed!", e);
+            UserController.logger.error("Authorizing resource failed!", e);
+            throw e;
         }
     }
 
-    public void authUser(String userName, String password) throws UserNotFoundException, IncorrectPasswordException {
-        this.authUser(this.getConnection(), userName, password);
-    }
+    public void authUser(String userName, String password) throws UserNotFoundException, IncorrectPasswordException, SQLException {
+        UserController.logger.debug("Authorizing user");
 
-    private void authUser(@NonNull Connection connection, String userName, String password) throws UserNotFoundException, IncorrectPasswordException {
-        try {
+        try (Connection connection = this.db.getConnection()) {
             PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM `users` WHERE `login`=?");
             preparedStatement.setString(1, userName);
             ResultSet resultUser = preparedStatement.executeQuery();
@@ -157,9 +127,10 @@ public class UserController {
             }
 
             this.logOnUser = new User(resultUser.getInt("id"), resultUser.getString("login"), resultUser.getString("passwordHash"), resultUser.getString("salt"), resultUser.getString("personName"));
-            this.logger.info("Authorized as user " + this.logOnUser.getLogin() + " (" + this.logOnUser.getPersonName() + ")");
+            UserController.logger.debug("Authorized as user " + this.logOnUser.getLogin() + " (" + this.logOnUser.getPersonName() + ")");
         } catch (SQLException e) {
-            this.logger.log(Level.SEVERE, "Authorizing user failed!", e);
+            UserController.logger.error("Authorizing user failed!", e);
+            throw e;
         }
     }
 
@@ -167,15 +138,15 @@ public class UserController {
         this.logOnUserAccounting = new Accounting(this.logOnUser, role);
     }
 
-    public void saveAccounting() {
-        this.saveAccounting(this.getConnection());
-    }
-
-    private void saveAccounting(@NonNull Connection connection) {
-        if (this.logOnUserAccounting.getLogoutDate() == null)
+    public void saveAccounting() throws SQLException {
+        if (this.logOnUserAccounting.getLogoutDate() == null) {
             this.logOnUserAccounting.setLogoutDate(Calendar.getInstance().getTime());
+            UserController.logger.debug("Logout date == null, setting up to current time");
+        }
 
-        try {
+        UserController.logger.debug("Saving accounting");
+
+        try (Connection connection = this.db.getConnection()) {
             connection.setAutoCommit(false);
 
             // Write user accounting into database
@@ -213,19 +184,20 @@ public class UserController {
             this.logOnUserAccounting = null;
             this.logOnUser = null;
         } catch (SQLException e) {
-            this.logger.log(Level.SEVERE, "Save accounting failed!", e);
-
-            try {
-                connection.rollback();
-            } catch (SQLException e1) {
-                this.logger.log(Level.SEVERE, "Rollback wrongly saved accounting failed!", e1);
-            }
+            UserController.logger.error("Save accounting failed!", e);
+            throw e;
         }
     }
 
     public void clearAll() {
         this.logOnUserAccounting = null;
         this.logOnUser = null;
+    }
+
+    @Override
+    public void close() {
+        UserController.logger.debug("Closing resources");
+        this.db.closePool();
     }
 
     public static abstract class ExceptionData extends Exception {
