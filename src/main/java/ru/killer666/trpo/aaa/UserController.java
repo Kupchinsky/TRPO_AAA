@@ -4,10 +4,7 @@ import lombok.Getter;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import ru.killer666.trpo.aaa.domains.Accounting;
-import ru.killer666.trpo.aaa.domains.Resource;
-import ru.killer666.trpo.aaa.domains.Role;
-import ru.killer666.trpo.aaa.domains.User;
+import ru.killer666.trpo.aaa.domains.*;
 import ru.killer666.trpo.aaa.exceptions.IncorrectPasswordException;
 import ru.killer666.trpo.aaa.exceptions.ResourceDeniedException;
 import ru.killer666.trpo.aaa.exceptions.ResourceNotFoundException;
@@ -138,7 +135,7 @@ public class UserController implements AutoCloseable {
         }
     }
 
-    public void createAccounting(Role role) {
+    public void createAccounting(RoleInterface role) {
         this.logOnUserAccounting = new Accounting(this.logOnUser, role);
     }
 
