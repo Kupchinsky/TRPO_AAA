@@ -24,6 +24,7 @@ public class UserController implements AutoCloseable {
     private User logOnUser = null;
     @Getter
     private Accounting logOnUserAccounting = null;
+    @Getter
     private final Database db = new Database(DatabaseConfig.userName, DatabaseConfig.password);
 
     private String encryptPassword(String password, String salt) {
