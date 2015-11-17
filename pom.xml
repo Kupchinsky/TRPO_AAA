@@ -30,6 +30,7 @@
                         <goal>shade</goal>
                     </goals>
                     <configuration>
+						<createDependencyReducedPom>false</createDependencyReducedPom>
                         <artifactSet>
                             <excludes>
                                 <exclude>org.projectlombok:lombok</exclude>
