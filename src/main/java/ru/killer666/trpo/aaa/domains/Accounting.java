@@ -19,7 +19,7 @@ public class Accounting {
     @NonNull
     private List<Resource> resources = new ArrayList<>();
     @NonNull
-    private Role role;
+    private RoleInterface role;
     private int volume = 0;
     private Date loginDate = Calendar.getInstance().getTime();
     private Date logoutDate = null;

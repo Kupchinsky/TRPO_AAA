@@ -10,6 +10,8 @@ import java.io.PrintWriter;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class ConsoleMain {
@@ -119,7 +121,12 @@ public class ConsoleMain {
             ConsoleMain.logger.warn("Incorrect password {} for user {}!", e.getCausePassword(), e.getCauseUserName());
             return ResultCode.INCORRECTPASSWORD;
         } catch (InvalidRoleException e) {
-            ConsoleMain.logger.warn("Invalid role: {}. Valid values are: {}", e.getCauseStr(), Role.asList());
+            List<String> result = new ArrayList<>();
+
+            for (Role role : Role.values())
+                result.add(role.name());
+
+            ConsoleMain.logger.warn("Invalid role: {}. Valid values are: {}", e.getCauseStr(), String.join(", ", result));
             return ResultCode.INVALIDROLE;
         } catch (ResourceNotFoundException | ResourceDeniedException e) {
             ConsoleMain.logger.warn("Resource {} {} for user {}!", e.getCauseResource(), e instanceof ResourceNotFoundException ? "not found" : "denied", e.getCauseUserName());
