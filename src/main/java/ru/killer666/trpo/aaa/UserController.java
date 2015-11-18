@@ -4,14 +4,17 @@ import lombok.Getter;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import ru.killer666.trpo.aaa.domains.*;
+import ru.killer666.trpo.aaa.domains.Accounting;
+import ru.killer666.trpo.aaa.domains.Resource;
+import ru.killer666.trpo.aaa.domains.RoleInterface;
+import ru.killer666.trpo.aaa.domains.User;
 import ru.killer666.trpo.aaa.exceptions.IncorrectPasswordException;
 import ru.killer666.trpo.aaa.exceptions.ResourceDeniedException;
 import ru.killer666.trpo.aaa.exceptions.ResourceNotFoundException;
 import ru.killer666.trpo.aaa.exceptions.UserNotFoundException;
 
 import java.sql.*;
-import java.util.Calendar;
+import java.util.*;
 
 public class UserController implements AutoCloseable {
 
@@ -26,6 +29,44 @@ public class UserController implements AutoCloseable {
 
     private String encryptPassword(String password, String salt) {
         return DigestUtils.shaHex(DigestUtils.shaHex(password) + salt);
+    }
+
+    public List<Resource> getAllResources() throws SQLException {
+        UserController.logger.debug("Fetching all resources");
+
+        try (Connection connection = this.db.getConnection()) {
+
+            ResultSet resultResources = connection.createStatement().executeQuery("SELECT * FROM `resources`");
+            List<Resource> result = new ArrayList<>();
+            Map<Resource, Integer> parentIds = new HashMap<>();
+
+            while (resultResources.next()) {
+
+                Resource resultResource = new Resource(resultResources.getInt("id"), resultResources.getString("name"), null);
+                int parentResourceId = resultResources.getInt("parent_resource_id");
+
+                if (!resultResources.wasNull())
+                    parentIds.put(resultResource, parentResourceId);
+
+                result.add(resultResource);
+            }
+
+            for (Map.Entry<Resource, Integer> entry : parentIds.entrySet()) {
+
+                for (Resource resource : result) {
+                    if (resource.getDatabaseId() == entry.getValue()) {
+                        entry.getKey().setParentResource(resource);
+                        break;
+                    }
+                }
+
+            }
+
+            return result;
+        } catch (SQLException e) {
+            UserController.logger.error("Fetching resources failed!", e);
+            throw e;
+        }
     }
 
     public void authResource(String resourceName) throws ResourceNotFoundException, ResourceDeniedException, SQLException {
