@@ -71,10 +71,27 @@ public class UserController implements AutoCloseable {
 
     /* Для внешнего использования */
     @SuppressWarnings("unused")
-    public List<Integer> getGrantedRoles(Resource resource) {
+    public List<Integer> getGrantedRoles(Resource resource) throws SQLException {
         UserController.logger.debug("Getting roles for resource");
 
-        return null;
+        try (Connection connection = this.db.getConnection()) {
+            PreparedStatement preparedStatement = connection.prepareStatement("SELECT `role` FROM `resources_users` WHERE `resource_id`=? AND `user_id`=?");
+            preparedStatement.setInt(1, resource.getDatabaseId());
+            preparedStatement.setInt(2, this.logOnUser.getDatabaseId());
+
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            List<Integer> result = new ArrayList<>();
+
+            while (resultSet.next()) {
+                result.add(resultSet.getInt("role"));
+            }
+
+            return result;
+        } catch (SQLException e) {
+            UserController.logger.error("Fetching roles for resource failed!", e);
+            throw e;
+        }
     }
 
     public void authResource(Resource resource, RoleInterface role) throws ResourceNotFoundException, ResourceDeniedException, SQLException {
