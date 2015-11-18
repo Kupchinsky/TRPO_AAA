@@ -5,10 +5,10 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @Data
@@ -16,11 +16,15 @@ import java.util.List;
 public class Accounting {
     @NonNull
     private User user;
-    @NonNull
-    private List<Resource> resources = new ArrayList<>();
-    @NonNull
-    private RoleInterface role;
+
+    private Map<Resource, RoleInterface> resources = new HashMap<>();
+
     private int volume = 0;
+
     private Date loginDate = Calendar.getInstance().getTime();
     private Date logoutDate = null;
+
+    public void increaseVolume(int add) {
+        this.volume += add;
+    }
 }

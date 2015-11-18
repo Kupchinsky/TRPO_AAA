@@ -3,6 +3,7 @@ package ru.killer666.trpo.aaa;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import ru.killer666.trpo.aaa.domains.Resource;
 import ru.killer666.trpo.aaa.domains.Role;
 import ru.killer666.trpo.aaa.exceptions.*;
 
@@ -63,10 +64,25 @@ public class ConsoleMain {
             controller.authUser(commandLine.getOptionValue("login"), commandLine.getOptionValue("pass"));
 
             if (commandLine.hasOption("res")) {
+                // TODO: избавиться от кода после внедрения Hibernate
+                String resourceName = commandLine.getOptionValue("res");
+                Resource resource = null;
+                List<Resource> resources = controller.getAllResources();
+
+                for (Resource checkResource : resources) {
+                    if (checkResource.getName().equals(resourceName)) {
+                        resource = checkResource;
+                        break;
+                    }
+                }
+
+                if (resource == null)
+                    throw new ResourceNotFoundException(resourceName);
+
                 if (!commandLine.hasOption("role"))
                     throw new MissingOptionException("Option not found: -role,--role");
 
-                // Get role and create accounting
+                // Get role
                 String strRole = commandLine.getOptionValue("role");
                 Role role;
                 try {
@@ -75,10 +91,8 @@ public class ConsoleMain {
                     throw new InvalidRoleException(strRole);
                 }
 
-                controller.createAccounting(role);
-
                 // Auth resource
-                controller.authResource(commandLine.getOptionValue("res"));
+                controller.authResource(resource, role);
 
                 boolean hasSd = commandLine.hasOption("ds");
                 boolean hasEd = commandLine.hasOption("de");
@@ -98,7 +112,7 @@ public class ConsoleMain {
 
                     controller.getLogOnUserAccounting().setLoginDate(format.parse(commandLine.getOptionValue("ds")));
                     controller.getLogOnUserAccounting().setLogoutDate(format.parse(commandLine.getOptionValue("de")));
-                    controller.getLogOnUserAccounting().setVolume(Integer.parseInt(commandLine.getOptionValue("vol")));
+                    controller.getLogOnUserAccounting().increaseVolume(Integer.parseInt(commandLine.getOptionValue("vol")));
 
                     if (!controller.getLogOnUserAccounting().getLoginDate().before(controller.getLogOnUserAccounting().getLogoutDate()))
                         throw new NumberFormatException("Incorrect login or logout dates!");

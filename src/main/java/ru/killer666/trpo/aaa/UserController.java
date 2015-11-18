@@ -69,31 +69,30 @@ public class UserController implements AutoCloseable {
         }
     }
 
-    public void authResource(String resourceName) throws ResourceNotFoundException, ResourceDeniedException, SQLException {
+    /* Для внешнего использования */
+    @SuppressWarnings("unused")
+    public List<Integer> getGrantedRoles(Resource resource) {
+        UserController.logger.debug("Getting roles for resource");
+
+        return null;
+    }
+
+    public void authResource(Resource resource, RoleInterface role) throws ResourceNotFoundException, ResourceDeniedException, SQLException {
         UserController.logger.debug("Authorizing resource");
 
         try (Connection connection = this.db.getConnection()) {
-            // Checking resource exists
-            PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM `resources` WHERE `name`=?");
-            preparedStatement.setString(1, resourceName);
-            ResultSet resultResource = preparedStatement.executeQuery();
-
-            if (!resultResource.first()) {
-                throw new ResourceNotFoundException(resourceName);
-            }
-
             // Checking resource access
             boolean accessGranted = false;
-            int lastResourceId = resultResource.getInt("id");
-            int lastParentResourceId = resultResource.getInt("parent_resource_id");
-            boolean hasParentResourceId = !resultResource.wasNull();
+            int lastResourceId = resource.getDatabaseId();
+            boolean hasParentResourceId = resource.getParentResource() != null;
+            int lastParentResourceId = hasParentResourceId ? resource.getParentResource().getDatabaseId() : 0;
 
             while (true) {
                 // Checking access for this resource
-                preparedStatement = connection.prepareStatement("SELECT * FROM `resources_users` WHERE `resource_id`=? AND `user_id`=? AND `role`=?");
+                PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM `resources_users` WHERE `resource_id`=? AND `user_id`=? AND `role`=?");
                 preparedStatement.setInt(1, lastResourceId);
                 preparedStatement.setInt(2, this.logOnUser.getDatabaseId());
-                preparedStatement.setInt(3, this.logOnUserAccounting.getRole().getValue());
+                preparedStatement.setInt(3, role.getValue());
                 ResultSet resultAccess = preparedStatement.executeQuery();
 
                 if (resultAccess.first()) {
@@ -121,15 +120,15 @@ public class UserController implements AutoCloseable {
             }
 
             if (!accessGranted) {
-                throw new ResourceDeniedException(resourceName, this.logOnUser.getLogin());
+                throw new ResourceDeniedException(resource.getName(), this.logOnUser.getLogin());
             }
 
             // Finding all child resources
-            Resource lastParentResource = new Resource(resultResource.getInt("id"), resultResource.getString("name"), null);
-            this.logOnUserAccounting.getResources().add(lastParentResource);
+            Resource lastParentResource = resource;
+            this.logOnUserAccounting.getResources().put(lastParentResource, role);
 
             while (true) {
-                preparedStatement = this.db.getConnection().prepareStatement("SELECT * FROM `resources` WHERE `parent_resource_id`=?");
+                PreparedStatement preparedStatement = this.db.getConnection().prepareStatement("SELECT * FROM `resources` WHERE `parent_resource_id`=?");
                 preparedStatement.setInt(1, lastParentResource.getDatabaseId());
 
                 ResultSet resultChildResource = preparedStatement.executeQuery();
@@ -139,12 +138,12 @@ public class UserController implements AutoCloseable {
                 }
 
                 Resource newResource = new Resource(resultChildResource.getInt("id"), resultChildResource.getString("name"), lastParentResource);
-                this.logOnUserAccounting.getResources().add(newResource);
+                this.logOnUserAccounting.getResources().put(newResource, role);
 
                 lastParentResource = newResource;
             }
 
-            UserController.logger.debug("Authorized on resource " + resourceName);
+            UserController.logger.debug("Authorized on resource " + resource.getName());
         } catch (SQLException e) {
             UserController.logger.error("Authorizing resource failed!", e);
             throw e;
@@ -169,15 +168,13 @@ public class UserController implements AutoCloseable {
             }
 
             this.logOnUser = new User(resultUser.getInt("id"), resultUser.getString("login"), resultUser.getString("passwordHash"), resultUser.getString("salt"), resultUser.getString("personName"));
+            this.logOnUserAccounting = new Accounting(this.logOnUser);
+
             UserController.logger.debug("Authorized as user " + this.logOnUser.getLogin() + " (" + this.logOnUser.getPersonName() + ")");
         } catch (SQLException e) {
             UserController.logger.error("Authorizing user failed!", e);
             throw e;
         }
-    }
-
-    public void createAccounting(RoleInterface role) {
-        this.logOnUserAccounting = new Accounting(this.logOnUser, role);
     }
 
     public void saveAccounting() throws SQLException {
@@ -192,12 +189,11 @@ public class UserController implements AutoCloseable {
             connection.setAutoCommit(false);
 
             // Write user accounting into database
-            PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO `accounting` (`user_id`, `role`, `volume`, `logon_date`, `logout_date`) VALUES (?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
+            PreparedStatement preparedStatement = connection.prepareStatement("INSERT INTO `accounting` (`user_id`, `volume`, `logon_date`, `logout_date`) VALUES (?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
             preparedStatement.setInt(1, this.logOnUser.getDatabaseId());
-            preparedStatement.setInt(2, this.logOnUserAccounting.getRole().getValue());
-            preparedStatement.setInt(3, this.logOnUserAccounting.getVolume());
-            preparedStatement.setTimestamp(4, new java.sql.Timestamp(this.logOnUserAccounting.getLoginDate().getTime()));
-            preparedStatement.setTimestamp(5, new java.sql.Timestamp(this.logOnUserAccounting.getLogoutDate().getTime()));
+            preparedStatement.setInt(2, this.logOnUserAccounting.getVolume());
+            preparedStatement.setTimestamp(3, new java.sql.Timestamp(this.logOnUserAccounting.getLoginDate().getTime()));
+            preparedStatement.setTimestamp(4, new java.sql.Timestamp(this.logOnUserAccounting.getLogoutDate().getTime()));
 
             if (preparedStatement.executeUpdate() == 0)
                 throw new SQLException("Creating accounting item failed, no rows affected.");
@@ -211,8 +207,8 @@ public class UserController implements AutoCloseable {
                     throw new SQLException("Creating accounting item failed, no ID obtained.");
             }
 
-            // Write resource
-            for (Resource resource : this.logOnUserAccounting.getResources()) {
+            // Write resources
+            for (Resource resource : this.logOnUserAccounting.getResources().keySet()) {
                 preparedStatement = connection.prepareStatement("INSERT INTO `accounting_resources` (`accounting_id`, `resource_id`) VALUES (?, ?)");
                 preparedStatement.setInt(1, accountingId);
                 preparedStatement.setInt(2, resource.getDatabaseId());
