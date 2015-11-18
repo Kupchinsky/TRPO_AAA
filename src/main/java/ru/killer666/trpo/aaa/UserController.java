@@ -75,16 +75,42 @@ public class UserController implements AutoCloseable {
         UserController.logger.debug("Getting roles for resource");
 
         try (Connection connection = this.db.getConnection()) {
-            PreparedStatement preparedStatement = connection.prepareStatement("SELECT `role` FROM `resources_users` WHERE `resource_id`=? AND `user_id`=?");
-            preparedStatement.setInt(1, resource.getDatabaseId());
-            preparedStatement.setInt(2, this.logOnUser.getDatabaseId());
-
-            ResultSet resultSet = preparedStatement.executeQuery();
-
             List<Integer> result = new ArrayList<>();
 
-            while (resultSet.next()) {
-                result.add(resultSet.getInt("role"));
+            // Checking resource access
+            boolean accessGranted = false;
+            int lastResourceId = resource.getDatabaseId();
+            boolean hasParentResourceId = resource.getParentResource() != null;
+            int lastParentResourceId = hasParentResourceId ? resource.getParentResource().getDatabaseId() : 0;
+
+            while (true) {
+                // Checking access for this resource
+                PreparedStatement preparedStatement = connection.prepareStatement("SELECT `role` FROM `resources_users` WHERE `resource_id`=? AND `user_id`=?");
+                preparedStatement.setInt(1, lastResourceId);
+                preparedStatement.setInt(2, this.logOnUser.getDatabaseId());
+                ResultSet resultAccess = preparedStatement.executeQuery();
+
+                if (resultAccess.first()) {
+                    result.add(resultAccess.getInt("role"));
+                }
+
+                // Finding parent resources with access
+                if (!hasParentResourceId) {
+                    break;
+                }
+
+                preparedStatement = connection.prepareStatement("SELECT * FROM `resources` WHERE `id`=?");
+                preparedStatement.setInt(1, lastParentResourceId);
+
+                ResultSet resultParentResource = preparedStatement.executeQuery();
+
+                if (!resultParentResource.first()) {
+                    break;
+                }
+
+                lastResourceId = resultParentResource.getInt("id");
+                lastParentResourceId = resultParentResource.getInt("parent_resource_id");
+                hasParentResourceId = !resultParentResource.wasNull();
             }
 
             return result;
