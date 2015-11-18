@@ -1,5 +1,7 @@
 package ru.killer666.trpo.aaa.domains;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -7,8 +9,6 @@ import lombok.ToString;
 
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 @RequiredArgsConstructor
 @Data
@@ -17,7 +17,7 @@ public class Accounting {
     @NonNull
     private User user;
 
-    private Map<Resource, RoleInterface> resources = new HashMap<>();
+    private Multimap<Resource, RoleInterface> resources = ArrayListMultimap.create();
 
     private int volume = 0;
 
