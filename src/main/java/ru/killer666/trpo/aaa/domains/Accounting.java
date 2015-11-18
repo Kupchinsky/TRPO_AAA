@@ -1,6 +1,6 @@
 package ru.killer666.trpo.aaa.domains;
 
-import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import lombok.Data;
 import lombok.NonNull;
@@ -17,7 +17,7 @@ public class Accounting {
     @NonNull
     private User user;
 
-    private Multimap<Resource, RoleInterface> resources = ArrayListMultimap.create();
+    private Multimap<Resource, RoleInterface> resources = HashMultimap.create();
 
     private int volume = 0;
 
