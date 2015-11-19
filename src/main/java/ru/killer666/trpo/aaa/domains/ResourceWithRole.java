@@ -2,6 +2,7 @@ package ru.killer666.trpo.aaa.domains;
 
 import lombok.Data;
 import lombok.ToString;
+import ru.killer666.trpo.aaa.RoleInterface;
 
 import javax.persistence.*;
 
@@ -9,8 +10,8 @@ import javax.persistence.*;
 @ToString
 
 @Entity
-@Table(name = "resources", uniqueConstraints = @UniqueConstraint(columnNames = "name"))
-public class Resource implements Comparable<Resource> {
+@Table(name = "resources_users", uniqueConstraints = @UniqueConstraint(columnNames = {"resource_id", "user_id", "role"}))
+public class ResourceWithRole<T extends RoleInterface> {
     @Id
     @Column(name = "id")
     @GeneratedValue
@@ -22,8 +23,7 @@ public class Resource implements Comparable<Resource> {
     @Column(name = "parent_resource_id")
     private Resource parentResource;
 
-    @Override
-    public int compareTo(Resource other) {
-        return other.getName().compareTo(this.getName());
-    }
+    @Enumerated
+    @Column(name = "role")
+    private T role;
 }

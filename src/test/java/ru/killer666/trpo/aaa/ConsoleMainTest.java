@@ -1,6 +1,7 @@
 package ru.killer666.trpo.aaa;
 
 import org.junit.Test;
+import ru.killer666.trpo.aaa.views.ConsoleMain;
 
 import static org.junit.Assert.assertEquals;
 

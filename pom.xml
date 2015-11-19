@@ -6,7 +6,7 @@
 
     <groupId>ru.killer666.trpo.AAA</groupId>
     <artifactId>AAA</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>5.0</version>
 
     <build>
         <plugins>
@@ -38,7 +38,7 @@
                         </artifactSet>
                         <transformers>
                             <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                <mainClass>ru.killer666.trpo.aaa.ConsoleMain</mainClass>
+                                <mainClass>ru.killer666.trpo.aaa.views.ConsoleMain</mainClass>
                             </transformer>
                         </transformers>
                     </configuration>
@@ -99,16 +99,6 @@
             <version>1.4.190</version>
         </dependency>
         <dependency>
-            <groupId>com.zaxxer</groupId>
-            <artifactId>HikariCP</artifactId>
-            <version>2.4.1</version>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <version>1.7.12</version>
-        </dependency>
-        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.16.2</version>
@@ -132,6 +122,16 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>19.0-rc2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-core</artifactId>
+            <version>4.3.9.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>9.3.6.v20151106</version>
         </dependency>
 
         <dependency>

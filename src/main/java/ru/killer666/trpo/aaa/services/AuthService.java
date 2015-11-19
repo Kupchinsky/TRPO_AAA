@@ -1,4 +1,4 @@
-package ru.killer666.trpo.aaa;
+package ru.killer666.trpo.aaa.services;
 
 import lombok.Getter;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -6,7 +6,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import ru.killer666.trpo.aaa.domains.Accounting;
 import ru.killer666.trpo.aaa.domains.Resource;
-import ru.killer666.trpo.aaa.domains.RoleInterface;
+import ru.killer666.trpo.aaa.RoleInterface;
 import ru.killer666.trpo.aaa.domains.User;
 import ru.killer666.trpo.aaa.exceptions.IncorrectPasswordException;
 import ru.killer666.trpo.aaa.exceptions.ResourceDeniedException;
@@ -16,9 +16,9 @@ import ru.killer666.trpo.aaa.exceptions.UserNotFoundException;
 import java.sql.*;
 import java.util.*;
 
-public class UserController implements AutoCloseable {
+public class AuthService {
 
-    private static final Logger logger = LogManager.getLogger(UserController.class);
+    private static final Logger logger = LogManager.getLogger(AuthService.class);
 
     @Getter
     private User logOnUser = null;
@@ -32,7 +32,7 @@ public class UserController implements AutoCloseable {
     }
 
     public List<Resource> getAllResources() throws SQLException {
-        UserController.logger.debug("Fetching all resources");
+        AuthService.logger.debug("Fetching all resources");
 
         try (Connection connection = this.db.getConnection()) {
 
@@ -64,7 +64,7 @@ public class UserController implements AutoCloseable {
 
             return result;
         } catch (SQLException e) {
-            UserController.logger.error("Fetching resources failed!", e);
+            AuthService.logger.error("Fetching resources failed!", e);
             throw e;
         }
     }
@@ -72,7 +72,7 @@ public class UserController implements AutoCloseable {
     /* Для внешнего использования */
     @SuppressWarnings("unused")
     public List<Integer> getGrantedRoles(Resource resource) throws SQLException {
-        UserController.logger.debug("Getting roles for resource");
+        AuthService.logger.debug("Getting roles for resource");
 
         try (Connection connection = this.db.getConnection()) {
             PreparedStatement preparedStatement = connection.prepareStatement("SELECT `role` FROM `resources_users` WHERE `resource_id`=? AND `user_id`=?");
@@ -89,13 +89,13 @@ public class UserController implements AutoCloseable {
 
             return result;
         } catch (SQLException e) {
-            UserController.logger.error("Fetching roles for resource failed!", e);
+            AuthService.logger.error("Fetching roles for resource failed!", e);
             throw e;
         }
     }
 
     public void authResource(Resource resource, RoleInterface role) throws ResourceNotFoundException, ResourceDeniedException, SQLException {
-        UserController.logger.debug("Authorizing resource");
+        AuthService.logger.debug("Authorizing resource");
 
         try (Connection connection = this.db.getConnection()) {
             // Checking access for this resource
@@ -112,15 +112,15 @@ public class UserController implements AutoCloseable {
 
             this.logOnUserAccounting.getResources().put(resource, role);
 
-            UserController.logger.debug("Authorized on resource " + resource.getName());
+            AuthService.logger.debug("Authorized on resource " + resource.getName());
         } catch (SQLException e) {
-            UserController.logger.error("Authorizing resource failed!", e);
+            AuthService.logger.error("Authorizing resource failed!", e);
             throw e;
         }
     }
 
     public void authUser(String userName, String password) throws UserNotFoundException, IncorrectPasswordException, SQLException {
-        UserController.logger.debug("Authorizing user");
+        AuthService.logger.debug("Authorizing user");
 
         try (Connection connection = this.db.getConnection()) {
             PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM `users` WHERE `login`=?");
@@ -139,9 +139,9 @@ public class UserController implements AutoCloseable {
             this.logOnUser = new User(resultUser.getInt("id"), resultUser.getString("login"), resultUser.getString("passwordHash"), resultUser.getString("salt"), resultUser.getString("personName"));
             this.logOnUserAccounting = new Accounting(this.logOnUser);
 
-            UserController.logger.debug("Authorized as user " + this.logOnUser.getLogin() + " (" + this.logOnUser.getPersonName() + ")");
+            AuthService.logger.debug("Authorized as user " + this.logOnUser.getLogin() + " (" + this.logOnUser.getPersonName() + ")");
         } catch (SQLException e) {
-            UserController.logger.error("Authorizing user failed!", e);
+            AuthService.logger.error("Authorizing user failed!", e);
             throw e;
         }
     }
@@ -149,10 +149,10 @@ public class UserController implements AutoCloseable {
     public void saveAccounting() throws SQLException {
         if (this.logOnUserAccounting.getLogoutDate() == null) {
             this.logOnUserAccounting.setLogoutDate(Calendar.getInstance().getTime());
-            UserController.logger.debug("Logout date == null, setting up to current time");
+            AuthService.logger.debug("Logout date == null, setting up to current time");
         }
 
-        UserController.logger.debug("Saving accounting");
+        AuthService.logger.debug("Saving accounting");
 
         try (Connection connection = this.db.getConnection()) {
             connection.setAutoCommit(false);
@@ -192,7 +192,7 @@ public class UserController implements AutoCloseable {
             this.logOnUserAccounting = null;
             this.logOnUser = null;
         } catch (SQLException e) {
-            UserController.logger.error("Save accounting failed!", e);
+            AuthService.logger.error("Save accounting failed!", e);
             throw e;
         }
     }
@@ -200,11 +200,5 @@ public class UserController implements AutoCloseable {
     public void clearAll() {
         this.logOnUserAccounting = null;
         this.logOnUser = null;
-    }
-
-    @Override
-    public void close() {
-        UserController.logger.debug("Closing resources");
-        this.db.closePool();
     }
 }

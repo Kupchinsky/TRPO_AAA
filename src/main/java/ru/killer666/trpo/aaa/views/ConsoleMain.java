@@ -1,11 +1,13 @@
-package ru.killer666.trpo.aaa;
+package ru.killer666.trpo.aaa.views;
 
+import lombok.Getter;
 import org.apache.commons.cli.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import ru.killer666.trpo.aaa.domains.Resource;
 import ru.killer666.trpo.aaa.domains.Role;
 import ru.killer666.trpo.aaa.exceptions.*;
+import ru.killer666.trpo.aaa.services.AuthService;
 
 import java.io.PrintWriter;
 import java.sql.SQLException;
@@ -55,7 +57,7 @@ public class ConsoleMain {
                 .addOption(this.makeOptionWithArgument("de", "End date", false))
                 .addOption(this.makeOptionWithArgument("vol", "Volume", false));
 
-        try (UserController controller = new UserController()) {
+        try (AuthService controller = new AuthService()) {
             CommandLine commandLine = new DefaultParser().parse(options, args);
 
             ConsoleMain.logger.warn("Started");
@@ -159,5 +161,23 @@ public class ConsoleMain {
     public static void main(String[] args) {
         ResultCode result = new ConsoleMain().work(args);
         System.exit(result.getValue());
+    }
+
+    enum ResultCode {
+        SUCCESS(0),
+        USERNOTFOUND(1),
+        INCORRECTPASSWORD(2),
+        INVALIDROLE(3),
+        RESOURCEDENIED(4),
+        INCORRECTACTIVITY(5),
+        INVALIDINPUT(255),
+        UNKNOWNERROR(255);
+
+        @Getter
+        private final int value;
+
+        ResultCode(int i) {
+            value = i;
+        }
     }
 }

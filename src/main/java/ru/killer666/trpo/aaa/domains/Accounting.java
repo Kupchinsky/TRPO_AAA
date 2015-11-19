@@ -1,27 +1,38 @@
 package ru.killer666.trpo.aaa.domains;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import lombok.Data;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
+import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 
-@RequiredArgsConstructor
 @Data
 @ToString
+
+@Entity
+@Table(name = "accounting")
 public class Accounting {
-    @NonNull
+    @Id
+    @Column(name = "id")
+    @GeneratedValue
+    private Integer databaseId;
+
+    @Column(name = "user_id")
     private User user;
 
-    private Multimap<Resource, RoleInterface> resources = HashMultimap.create();
+    @OneToMany
+    private List<AccountingResource> resources = new ArrayList<>();
 
-    private int volume = 0;
+    @Column(name = "volume")
+    private Integer volume = 0;
 
+    @Column(name = "logon_date")
     private Date loginDate = Calendar.getInstance().getTime();
+
+    @Column(name = "logout_date")
     private Date logoutDate = null;
 
     public void increaseVolume(int add) {
