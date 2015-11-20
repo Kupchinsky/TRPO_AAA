@@ -5,9 +5,9 @@ import org.apache.commons.cli.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import ru.killer666.trpo.aaa.domains.Resource;
-import ru.killer666.trpo.aaa.domains.Role;
 import ru.killer666.trpo.aaa.exceptions.*;
 import ru.killer666.trpo.aaa.services.AuthService;
+import ru.killer666.trpo.aaa.services.HibernateService;
 
 import java.io.PrintWriter;
 import java.sql.SQLException;
@@ -57,29 +57,20 @@ public class ConsoleMain {
                 .addOption(this.makeOptionWithArgument("de", "End date", false))
                 .addOption(this.makeOptionWithArgument("vol", "Volume", false));
 
-        try (AuthService controller = new AuthService()) {
+        try {
             CommandLine commandLine = new DefaultParser().parse(options, args);
 
             ConsoleMain.logger.warn("Started");
 
+            // Creating hibernate service, auth service
+            AuthService authService = new AuthService(new HibernateService("jdbc:h2:./aaa", "sa", "", "org.hibernate.dialect.H2Dialect"));
+
             // Auth user
-            controller.authUser(commandLine.getOptionValue("login"), commandLine.getOptionValue("pass"));
+            authService.authUser(commandLine.getOptionValue("login"), commandLine.getOptionValue("pass"));
 
             if (commandLine.hasOption("res")) {
-                // TODO: избавиться от кода после внедрения Hibernate
                 String resourceName = commandLine.getOptionValue("res");
-                Resource resource = null;
-                List<Resource> resources = controller.getAllResources();
-
-                for (Resource checkResource : resources) {
-                    if (checkResource.getName().equals(resourceName)) {
-                        resource = checkResource;
-                        break;
-                    }
-                }
-
-                if (resource == null)
-                    throw new ResourceNotFoundException(resourceName);
+                Resource resource = authService.getResourceByName(resourceName);
 
                 if (!commandLine.hasOption("role"))
                     throw new MissingOptionException("Option not found: -role,--role");
@@ -94,7 +85,7 @@ public class ConsoleMain {
                 }
 
                 // Auth resource
-                controller.authResource(resource, role);
+                authService.authResource(resource, role);
 
                 boolean hasSd = commandLine.hasOption("ds");
                 boolean hasEd = commandLine.hasOption("de");
@@ -112,21 +103,21 @@ public class ConsoleMain {
                     DateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
                     format.setLenient(false);
 
-                    controller.getLogOnUserAccounting().setLoginDate(format.parse(commandLine.getOptionValue("ds")));
-                    controller.getLogOnUserAccounting().setLogoutDate(format.parse(commandLine.getOptionValue("de")));
-                    controller.getLogOnUserAccounting().increaseVolume(Integer.parseInt(commandLine.getOptionValue("vol")));
+                    authService.getLogOnUserAccounting().setLoginDate(format.parse(commandLine.getOptionValue("ds")));
+                    authService.getLogOnUserAccounting().setLogoutDate(format.parse(commandLine.getOptionValue("de")));
+                    authService.getLogOnUserAccounting().increaseVolume(Integer.parseInt(commandLine.getOptionValue("vol")));
 
-                    if (!controller.getLogOnUserAccounting().getLoginDate().before(controller.getLogOnUserAccounting().getLogoutDate()))
+                    if (!authService.getLogOnUserAccounting().getLoginDate().before(authService.getLogOnUserAccounting().getLogoutDate()))
                         throw new NumberFormatException("Incorrect login or logout dates!");
 
-                    if (controller.getLogOnUserAccounting().getVolume() <= 0)
+                    if (authService.getLogOnUserAccounting().getVolume() <= 0)
                         throw new NumberFormatException("Invalid volume number!");
                 }
 
-                controller.saveAccounting();
+                authService.saveAccounting();
             }
 
-            controller.clearAll();
+            authService.clearAll();
         } catch (ParseException e) {
             ConsoleMain.printHelp(options);
             return ResultCode.INVALIDINPUT;
@@ -163,7 +154,7 @@ public class ConsoleMain {
         System.exit(result.getValue());
     }
 
-    enum ResultCode {
+    public enum ResultCode {
         SUCCESS(0),
         USERNOTFOUND(1),
         INCORRECTPASSWORD(2),
