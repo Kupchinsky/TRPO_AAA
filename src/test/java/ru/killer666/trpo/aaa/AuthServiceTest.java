@@ -9,7 +9,7 @@ import ru.killer666.trpo.aaa.views.ConsoleMain;
 
 import static org.junit.Assert.assertEquals;
 
-public class ConsoleMainTest {
+public class AuthServiceTest {
 
     private static final Logger logger = LogManager.getLogger(ConsoleMainTest.class);
     private static final ConsoleMain consoleMain = new ConsoleMain();
