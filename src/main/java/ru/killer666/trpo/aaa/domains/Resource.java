@@ -7,7 +7,6 @@ import javax.persistence.*;
 
 @Data
 @ToString
-
 @Entity
 @Table(name = "resources")
 public class Resource implements Comparable<Resource> {
@@ -16,7 +15,7 @@ public class Resource implements Comparable<Resource> {
     @GeneratedValue
     private int databaseId;
 
-    @Column(name = "name", unique = true)
+    @Column(name = "name", unique = true, nullable = false)
     private String name;
 
     @ManyToOne

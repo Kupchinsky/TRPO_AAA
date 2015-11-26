@@ -1,7 +1,6 @@
 package ru.killer666.trpo.aaa.domains;
 
 import lombok.Data;
-import lombok.NonNull;
 import lombok.ToString;
 
 import javax.persistence.*;
@@ -12,6 +11,8 @@ import java.util.List;
 
 @Data
 @ToString
+@Entity
+@Table(name = "accounting")
 public class Accounting {
     @Id
     @Column(name = "id")
@@ -19,20 +20,20 @@ public class Accounting {
     private int databaseId;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private User user;
 
-    @NonNull
+    @OneToMany(mappedBy = "accounting")
     private List<AccountingResource> resources = new ArrayList<>();
 
-    @Column(name = "volume")
+    @Column(name = "volume", nullable = false)
     private int volume = 0;
 
-    @Column(name = "logon_date")
+    @Column(name = "logon_date", nullable = false)
     private Date loginDate = Calendar.getInstance().getTime();
 
-    @Column(name = "logout_date")
-    private Date logoutDate = null;
+    @Column(name = "logout_date", nullable = false)
+    private Date logoutDate;
 
     public void increaseVolume(int inc) {
         this.volume += inc;

@@ -16,10 +16,10 @@ public class AccountingResource {
     private int databaseId;
 
     @ManyToOne
-    @JoinColumn(name = "accounting_id", referencedColumnName = "id")
+    @JoinColumn(name = "accounting_id", referencedColumnName = "id", nullable = false)
     private Accounting accounting;
 
     @ManyToOne
-    @JoinColumn(name = "resources_users_id", referencedColumnName = "id")
+    @JoinColumn(name = "resources_users_id", referencedColumnName = "id", nullable = false)
     private ResourceWithRole resourceWithRole;
 }
