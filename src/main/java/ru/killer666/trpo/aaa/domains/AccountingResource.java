@@ -16,9 +16,11 @@ public class AccountingResource {
     @GeneratedValue
     private Integer databaseId;
 
-    @Column(name = "accounting_id")
+    @ManyToOne
+    @JoinColumn(name = "accounting_id", referencedColumnName = "id", nullable = false)
     private Accounting accounting;
 
-    @Column(name = "resources_users_id")
+    @ManyToOne
+    @JoinColumn(name = "resources_users_id", referencedColumnName = "id", nullable = false)
     private ResourceWithRole resourceWithRole;
 }

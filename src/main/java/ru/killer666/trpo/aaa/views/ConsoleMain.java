@@ -21,6 +21,13 @@ public class ConsoleMain {
 
     private static final Logger logger = LogManager.getLogger(ConsoleMain.class);
 
+    public static final String DB_URL = "jdbc:mysql://localhost/trpo_aaa";
+    public static final String DB_USERNAME = "root";
+    public static final String DB_PASSWORD = "5`7478";
+
+    @Getter
+    private AuthService authService = null;
+
     private static void printHelp(final Options options) {
         final PrintWriter writer = new PrintWriter(System.out);
         final HelpFormatter helpFormatter = new HelpFormatter();
@@ -47,6 +54,11 @@ public class ConsoleMain {
         return result;
     }
 
+    public void createAuthService() {
+        if (this.authService == null)
+            this.authService = new AuthService(new HibernateService(DB_URL, DB_USERNAME, DB_PASSWORD, "org.hibernate.dialect.MySQL5Dialect"), Role.class);
+    }
+
     public ResultCode work(String[] args) {
         Options options = new Options()
                 .addOption(this.makeOptionWithArgument("login", "Login name", true))
@@ -63,14 +75,14 @@ public class ConsoleMain {
             ConsoleMain.logger.warn("Started");
 
             // Creating hibernate service, auth service
-            AuthService authService = new AuthService(new HibernateService("jdbc:h2:./aaa", "sa", "", "org.hibernate.dialect.H2Dialect"));
+            this.createAuthService();
 
             // Auth user
-            authService.authUser(commandLine.getOptionValue("login"), commandLine.getOptionValue("pass"));
+            this.authService.authUser(commandLine.getOptionValue("login"), commandLine.getOptionValue("pass"));
 
             if (commandLine.hasOption("res")) {
                 String resourceName = commandLine.getOptionValue("res");
-                Resource resource = authService.getResourceByName(resourceName);
+                Resource resource = this.authService.getResourceByName(resourceName);
 
                 if (!commandLine.hasOption("role"))
                     throw new MissingOptionException("Option not found: -role,--role");
@@ -85,7 +97,7 @@ public class ConsoleMain {
                 }
 
                 // Auth resource
-                authService.authResource(resource, role);
+                this.authService.authResource(resource, role);
 
                 boolean hasSd = commandLine.hasOption("ds");
                 boolean hasEd = commandLine.hasOption("de");
@@ -103,21 +115,21 @@ public class ConsoleMain {
                     DateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
                     format.setLenient(false);
 
-                    authService.getLogOnUserAccounting().setLoginDate(format.parse(commandLine.getOptionValue("ds")));
-                    authService.getLogOnUserAccounting().setLogoutDate(format.parse(commandLine.getOptionValue("de")));
-                    authService.getLogOnUserAccounting().increaseVolume(Integer.parseInt(commandLine.getOptionValue("vol")));
+                    this.authService.getLogOnUserAccounting().setLoginDate(format.parse(commandLine.getOptionValue("ds")));
+                    this.authService.getLogOnUserAccounting().setLogoutDate(format.parse(commandLine.getOptionValue("de")));
+                    this.authService.getLogOnUserAccounting().increaseVolume(Integer.parseInt(commandLine.getOptionValue("vol")));
 
-                    if (!authService.getLogOnUserAccounting().getLoginDate().before(authService.getLogOnUserAccounting().getLogoutDate()))
+                    if (!this.authService.getLogOnUserAccounting().getLoginDate().before(authService.getLogOnUserAccounting().getLogoutDate()))
                         throw new NumberFormatException("Incorrect login or logout dates!");
 
-                    if (authService.getLogOnUserAccounting().getVolume() <= 0)
+                    if (this.authService.getLogOnUserAccounting().getVolume() <= 0)
                         throw new NumberFormatException("Invalid volume number!");
                 }
 
-                authService.saveAccounting();
+                this.authService.saveAccounting();
             }
 
-            authService.clearAll();
+            this.authService.clearAll();
         } catch (ParseException e) {
             ConsoleMain.printHelp(options);
             return ResultCode.INVALIDINPUT;

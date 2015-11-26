@@ -1,30 +1,16 @@
 package ru.killer666.trpo.aaa.domains;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.ToString;
 
-import javax.persistence.*;
-
+@AllArgsConstructor
 @Data
 @ToString
-
-@Entity
-@Table(name = "users", uniqueConstraints = @UniqueConstraint(columnNames = "login"))
 public class User {
-    @Id
-    @Column(name = "id")
-    @GeneratedValue
-    private Integer databaseId;
-
-    @Column(name = "login", unique = true)
+    private int databaseId;
     private String login;
-
-    @Column(name = "passwordHash")
     private String passwordHash;
-
-    @Column(name = "salt")
     private String salt;
-
-    @Column(name = "personName")
     private String personName;
 }

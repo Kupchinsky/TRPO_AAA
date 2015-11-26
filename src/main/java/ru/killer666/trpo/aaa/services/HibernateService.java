@@ -2,7 +2,6 @@ package ru.killer666.trpo.aaa.services;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.flywaydb.core.Flyway;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -18,15 +17,9 @@ public class HibernateService {
     private SessionFactory concreteSessionFactory;
 
     public HibernateService(String url, String userName, String password, String dialect, Class... annotatedClasses) {
-
-        HibernateService.logger.debug("Migrating");
-
-        Flyway flyway = new Flyway();
-        flyway.setDataSource(url, userName, password);
-        flyway.migrate();
-
         try {
             Properties prop = new Properties();
+            prop.setProperty("hibernate.hbm2ddl.auto", "update");
             prop.setProperty("hibernate.connection.url", url);
             prop.setProperty("hibernate.connection.username", userName);
             prop.setProperty("hibernate.connection.password", password);
@@ -41,11 +34,11 @@ public class HibernateService {
                 HibernateService.logger.debug("Added custom annotated class: " + cls.getSimpleName());
             }
 
-            annotationConfiguration.addAnnotatedClass(Accounting.class);
-            annotationConfiguration.addAnnotatedClass(AccountingResource.class);
-            annotationConfiguration.addAnnotatedClass(Resource.class);
-            annotationConfiguration.addAnnotatedClass(ResourceWithRole.class);
-            annotationConfiguration.addAnnotatedClass(User.class);
+            annotationConfiguration.addAnnotatedClass(User.class)
+                    .addAnnotatedClass(Resource.class)
+                    .addAnnotatedClass(ResourceWithRole.class)
+                    .addAnnotatedClass(Accounting.class)
+                    .addAnnotatedClass(AccountingResource.class);
 
             this.concreteSessionFactory = annotationConfiguration.buildSessionFactory();
         } catch (Throwable ex) {

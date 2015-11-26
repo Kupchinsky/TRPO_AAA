@@ -13,7 +13,10 @@ import ru.killer666.trpo.aaa.exceptions.ResourceDeniedException;
 import ru.killer666.trpo.aaa.exceptions.ResourceNotFoundException;
 import ru.killer666.trpo.aaa.exceptions.UserNotFoundException;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -27,9 +30,12 @@ public class AuthService {
     private Accounting logOnUserAccounting = null;
     @Getter
     private final HibernateService hibernateService;
+    @Getter
+    private final Class<? extends RoleInterface> roleInterfaceClass;
 
-    public AuthService(HibernateService hibernateService) {
+    public AuthService(HibernateService hibernateService, Class<? extends RoleInterface> roleInterfaceClass) {
         this.hibernateService = hibernateService;
+        this.roleInterfaceClass = roleInterfaceClass;
     }
 
     private String encryptPassword(String password, String salt) {
@@ -71,7 +77,7 @@ public class AuthService {
 
     /* Для внешнего использования */
     @SuppressWarnings("unused")
-    public List<RoleInterface> getGrantedRoles(Resource resource) throws SQLException {
+    public List<RoleInterface> getGrantedRoles(Resource resource) throws SQLException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         AuthService.logger.debug("Getting roles for resource");
 
         Session session = this.hibernateService.getSession();
@@ -81,8 +87,21 @@ public class AuthService {
         query.setInteger("user_id", this.logOnUser.getDatabaseId());
 
         @SuppressWarnings("unchecked")
-        List<RoleInterface> result = query.list();
+        List<ResourceWithRole> queryResult = query.list();
         session.close();
+
+        List<RoleInterface> result = new ArrayList<>();
+        Method valuesMethod = this.roleInterfaceClass.getMethod("values");
+        RoleInterface[] enumValues = (RoleInterface[]) valuesMethod.invoke(null);
+
+        for (ResourceWithRole resourceWithRole : queryResult) {
+            for (RoleInterface roleInterface : enumValues) {
+                if (resourceWithRole.getRole() == roleInterface.getValue()) {
+                    result.add(roleInterface);
+                    break;
+                }
+            }
+        }
 
         return result;
     }
@@ -146,7 +165,7 @@ public class AuthService {
         }
 
         this.logOnUser = user;
-        this.logOnUserAccounting = new Accounting();
+        this.logOnUserAccounting = new Accounting(this.logOnUser);
         this.logOnUserAccounting.setUser(this.logOnUser);
 
         AuthService.logger.debug("Authorized as user " + this.logOnUser.getLogin() + " (" + this.logOnUser.getPersonName() + ")");
@@ -164,9 +183,10 @@ public class AuthService {
 
         session.beginTransaction();
 
-        // Write user accounting into database
         session.save(this.logOnUserAccounting);
+        this.logOnUserAccounting.getResources().forEach(session::save);
 
+        session.getTransaction().commit();
         session.close();
 
         this.clearAll();

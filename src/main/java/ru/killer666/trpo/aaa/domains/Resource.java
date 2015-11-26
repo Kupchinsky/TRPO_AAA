@@ -1,29 +1,14 @@
 package ru.killer666.trpo.aaa.domains;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.ToString;
 
-import javax.persistence.*;
-
+@AllArgsConstructor
 @Data
 @ToString
-
-@Entity
-@Table(name = "resources", uniqueConstraints = @UniqueConstraint(columnNames = "name"))
-public class Resource implements Comparable<Resource> {
-    @Id
-    @Column(name = "id")
-    @GeneratedValue
-    private Integer databaseId;
-
-    @Column(name = "name", unique = true)
+public class Resource {
+    private int databaseId;
     private String name;
-
-    @Column(name = "parent_resource_id")
     private Resource parentResource;
-
-    @Override
-    public int compareTo(Resource other) {
-        return other.getName().compareTo(this.getName());
-    }
 }
