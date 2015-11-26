@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS `users` (
 	PRIMARY KEY (`id`),
 	UNIQUE KEY `login` (`login`)
 ) DEFAULT CHARSET=utf8;
-+
 
 CREATE TABLE IF NOT EXISTS `accounting` (
 	`id` int(11) NOT NULL AUTO_INCREMENT,
