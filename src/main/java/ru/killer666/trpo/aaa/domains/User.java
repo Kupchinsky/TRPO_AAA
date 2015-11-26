@@ -3,13 +3,12 @@ package ru.killer666.trpo.aaa.domains;
 import lombok.Data;
 import lombok.ToString;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
 
 @Data
 @ToString
-
-@Entity
-@Table(name = "users", uniqueConstraints = @UniqueConstraint(columnNames = "login"))
 public class User {
     @Id
     @Column(name = "id")

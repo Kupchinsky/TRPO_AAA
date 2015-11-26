@@ -1,6 +1,7 @@
 package ru.killer666.trpo.aaa.domains;
 
 import lombok.Data;
+import lombok.NonNull;
 import lombok.ToString;
 
 import javax.persistence.*;
@@ -11,9 +12,6 @@ import java.util.List;
 
 @Data
 @ToString
-
-@Entity
-@Table(name = "accounting")
 public class Accounting {
     @Id
     @Column(name = "id")
@@ -24,7 +22,7 @@ public class Accounting {
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     private User user;
 
-    @OneToMany
+    @NonNull
     private List<AccountingResource> resources = new ArrayList<>();
 
     @Column(name = "volume")
@@ -36,7 +34,7 @@ public class Accounting {
     @Column(name = "logout_date")
     private Date logoutDate = null;
 
-    public void increaseVolume(int add) {
-        this.volume += add;
+    public void increaseVolume(int inc) {
+        this.volume += inc;
     }
 }

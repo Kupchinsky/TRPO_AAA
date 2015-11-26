@@ -24,7 +24,7 @@ public class Resource implements Comparable<Resource> {
     private Resource parentResource;
 
     @Override
-    public int compareTo(Resource other) {
-        return other.getName().compareTo(this.getName());
+    public int compareTo(Resource o) {
+        return o.getName().compareTo(this.getName());
     }
 }

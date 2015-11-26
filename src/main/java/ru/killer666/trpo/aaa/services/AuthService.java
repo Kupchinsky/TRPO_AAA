@@ -30,9 +30,12 @@ public class AuthService {
     private Accounting logOnUserAccounting = null;
     @Getter
     private final HibernateService hibernateService;
+    @Getter
+    private final Class<? extends RoleInterface> roleInterfaceClass;
 
-    public AuthService(HibernateService hibernateService) {
+    public AuthService(HibernateService hibernateService, Class<? extends RoleInterface> roleInterfaceClass) {
         this.hibernateService = hibernateService;
+        this.roleInterfaceClass = roleInterfaceClass;
     }
 
     private String encryptPassword(String password, String salt) {
@@ -176,9 +179,10 @@ public class AuthService {
 
         session.beginTransaction();
 
-        // Write user accounting into database
         session.save(this.logOnUserAccounting);
+        this.logOnUserAccounting.getResources().forEach(session::save);
 
+        session.getTransaction().commit();
         session.close();
 
         this.clearAll();

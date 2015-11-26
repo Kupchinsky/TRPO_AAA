@@ -7,7 +7,6 @@ import javax.persistence.*;
 
 @Data
 @ToString
-
 @Entity
 @Table(name = "accounting_resources", uniqueConstraints = @UniqueConstraint(columnNames = {"accounting_id", "resources_users_id"}))
 public class AccountingResource {
