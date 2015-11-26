@@ -6,7 +6,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.flywaydb.core.Flyway;
 import org.junit.BeforeClass;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 import ru.killer666.trpo.aaa.exceptions.IncorrectPasswordException;
 import ru.killer666.trpo.aaa.exceptions.ResourceDeniedException;
 import ru.killer666.trpo.aaa.exceptions.ResourceNotFoundException;
@@ -15,17 +17,22 @@ import ru.killer666.trpo.aaa.services.AuthService;
 import ru.killer666.trpo.aaa.services.HibernateService;
 
 import java.sql.SQLException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
 
 import static org.junit.Assert.assertTrue;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class AuthServiceTest {
 
     private static final Logger logger = LogManager.getLogger(AuthServiceTest.class);
-    private static final String JDBC_URL = "jdbc:mysql://localhost/trpo_aaa";
-    private static final String JDBC_USERNAME = "root";
-    private static final String JDBC_PASSWORD = "5`7478";
-//"org.hibernate.dialect.H2Dialect"
-    private static AuthService authService = new AuthService(new HibernateService(JDBC_URL, JDBC_USERNAME, JDBC_PASSWORD, "org.hibernate.dialect.MySQL5Dialect"), Role.class);
+    private static final String JDBC_URL = "jdbc:h2:./target/aaa";
+    private static final String JDBC_USERNAME = "sa";
+    private static final String JDBC_PASSWORD = "";
+
+    private static AuthService authService = new AuthService(new HibernateService(JDBC_URL, JDBC_USERNAME, JDBC_PASSWORD, "org.hibernate.dialect.H2Dialect"), Role.class);
 
     @BeforeClass
     public static void initialize() {
@@ -38,7 +45,7 @@ public class AuthServiceTest {
     }
 
     @Test
-    public void testAuth1() throws SQLException {
+    public void test1Auth() throws SQLException {
         boolean result = false;
 
         try {
@@ -51,12 +58,12 @@ public class AuthServiceTest {
     }
 
     @Test
-    public void testAuth2() throws SQLException, UserNotFoundException, IncorrectPasswordException {
+    public void test2Auth() throws SQLException, UserNotFoundException, IncorrectPasswordException {
         authService.authUser("jdoe", "sup3rpaZZ");
     }
 
     @Test
-    public void testResourceAccess1() throws SQLException, ResourceNotFoundException {
+    public void test3ResourceAccess() throws SQLException, ResourceNotFoundException {
 
         boolean result = false;
 
@@ -68,19 +75,19 @@ public class AuthServiceTest {
 
         assertTrue("Resource auth result should be false", result);
     }
-/*
+
     @Test
-    public void testResourceAccess2() throws SQLException, ResourceNotFoundException, ResourceDeniedException {
-        authService.authResource(authService.getResourceByName("a.b"), Role.READ);
+    public void test4ResourceAccess() throws SQLException, ResourceNotFoundException, ResourceDeniedException {
+        authService.authResource(authService.getResourceByName("a.b"), Role.WRITE);
     }
 
     @Test
-    public void testResourceAccess3() throws SQLException, ResourceNotFoundException, ResourceDeniedException {
-        authService.authResource(authService.getResourceByName("a.b"), Role.EXECUTE);
+    public void test5ResourceAccess() throws SQLException, ResourceNotFoundException, ResourceDeniedException {
+        authService.authResource(authService.getResourceByName("a.bc"), Role.EXECUTE);
     }
 
     @Test
-    public void testAccounting() throws SQLException, ParseException {
+    public void test6Accounting() throws SQLException, ParseException {
 
         DateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
 
@@ -88,7 +95,7 @@ public class AuthServiceTest {
         authService.getLogOnUserAccounting().increaseVolume(100);
         authService.saveAccounting();
     }
-*/
+
     @ToString
     public enum Role implements RoleInterface {
         READ(1), WRITE(2), EXECUTE(4);

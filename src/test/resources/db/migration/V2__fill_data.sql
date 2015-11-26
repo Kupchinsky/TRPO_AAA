@@ -9,7 +9,7 @@ INSERT INTO `resources` (`id`, `name`, `parent_resource_id`) VALUES
 	(4, 'a.bc', 1);
 
 INSERT INTO `resources_users` (`id`, `resource_id`, `user_id`, `role`) VALUES
-	(1, 1, 1, 1),
-	(2, 2, 1, 2),
-	(3, 3, 2, 4),
-	(4, 4, 1, 4);
+	(1, 1, 1, 0),
+	(2, 2, 1, 1),
+	(3, 3, 2, 2),
+	(4, 4, 1, 2);
