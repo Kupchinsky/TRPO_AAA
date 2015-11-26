@@ -9,17 +9,18 @@ import javax.persistence.*;
 @ToString
 
 @Entity
-@Table(name = "resources", uniqueConstraints = @UniqueConstraint(columnNames = "name"))
+@Table(name = "resources")
 public class Resource implements Comparable<Resource> {
     @Id
     @Column(name = "id")
     @GeneratedValue
-    private Integer databaseId;
+    private int databaseId;
 
     @Column(name = "name", unique = true)
     private String name;
 
-    @Column(name = "parent_resource_id")
+    @ManyToOne
+    @JoinColumn(name = "parent_resource_id", referencedColumnName = "id")
     private Resource parentResource;
 
     @Override

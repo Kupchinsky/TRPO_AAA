@@ -14,7 +14,7 @@ public class User {
     @Id
     @Column(name = "id")
     @GeneratedValue
-    private Integer databaseId;
+    private int databaseId;
 
     @Column(name = "login", unique = true)
     private String login;

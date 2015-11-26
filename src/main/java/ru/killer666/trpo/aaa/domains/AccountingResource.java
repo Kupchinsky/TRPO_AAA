@@ -14,11 +14,13 @@ public class AccountingResource {
     @Id
     @Column(name = "id")
     @GeneratedValue
-    private Integer databaseId;
+    private int databaseId;
 
-    @Column(name = "accounting_id")
+    @ManyToOne
+    @JoinColumn(name = "accounting_id", referencedColumnName = "id")
     private Accounting accounting;
 
-    @Column(name = "resources_users_id")
+    @ManyToOne
+    @JoinColumn(name = "resources_users_id", referencedColumnName = "id")
     private ResourceWithRole resourceWithRole;
 }

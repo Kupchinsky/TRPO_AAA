@@ -21,10 +21,6 @@ public class HibernateService {
 
         HibernateService.logger.debug("Migrating");
 
-        Flyway flyway = new Flyway();
-        flyway.setDataSource(url, userName, password);
-        flyway.migrate();
-
         try {
             Properties prop = new Properties();
             prop.setProperty("hibernate.connection.url", url);
@@ -51,6 +47,10 @@ public class HibernateService {
         } catch (Throwable ex) {
             throw new ExceptionInInitializerError(ex);
         }
+
+        Flyway flyway = new Flyway();
+        flyway.setDataSource(url, userName, password);
+        flyway.migrate();
     }
 
     public Session getSession()

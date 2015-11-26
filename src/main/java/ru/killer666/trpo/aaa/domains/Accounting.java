@@ -18,16 +18,17 @@ public class Accounting {
     @Id
     @Column(name = "id")
     @GeneratedValue
-    private Integer databaseId;
+    private int databaseId;
 
-    @Column(name = "user_id")
+    @ManyToOne
+    @JoinColumn(name = "user_id", referencedColumnName = "id")
     private User user;
 
     @OneToMany
     private List<AccountingResource> resources = new ArrayList<>();
 
     @Column(name = "volume")
-    private Integer volume = 0;
+    private int volume = 0;
 
     @Column(name = "logon_date")
     private Date loginDate = Calendar.getInstance().getTime();

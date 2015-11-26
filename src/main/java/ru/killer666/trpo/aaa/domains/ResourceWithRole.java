@@ -2,7 +2,6 @@ package ru.killer666.trpo.aaa.domains;
 
 import lombok.Data;
 import lombok.ToString;
-import ru.killer666.trpo.aaa.RoleInterface;
 
 import javax.persistence.*;
 
@@ -10,20 +9,21 @@ import javax.persistence.*;
 @ToString
 
 @Entity
-@Table(name = "resources_users", uniqueConstraints = @UniqueConstraint(columnNames = {"resource_id", "user_id", "role"}))
-public class ResourceWithRole<T extends RoleInterface> {
+@Table(name = "resources_users", uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "resource_id", "role"}))
+public class ResourceWithRole {
     @Id
     @Column(name = "id")
     @GeneratedValue
-    private Integer databaseId;
+    private int databaseId;
 
-    @Column(name = "name", unique = true)
-    private String name;
+    @ManyToOne
+    @JoinColumn(name = "user_id", referencedColumnName = "id")
+    private User user;
 
-    @Column(name = "parent_resource_id")
+    @ManyToOne
+    @JoinColumn(name = "resource_id", referencedColumnName = "id")
     private Resource parentResource;
 
-    @Enumerated
     @Column(name = "role")
-    private T role;
+    private int role;
 }

@@ -13,7 +13,10 @@ import ru.killer666.trpo.aaa.exceptions.ResourceDeniedException;
 import ru.killer666.trpo.aaa.exceptions.ResourceNotFoundException;
 import ru.killer666.trpo.aaa.exceptions.UserNotFoundException;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
@@ -71,7 +74,7 @@ public class AuthService {
 
     /* Для внешнего использования */
     @SuppressWarnings("unused")
-    public List<RoleInterface> getGrantedRoles(Resource resource) throws SQLException {
+    public List<RoleInterface> getGrantedRoles(Resource resource, Class<? extends RoleInterface> roleClass) throws SQLException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         AuthService.logger.debug("Getting roles for resource");
 
         Session session = this.hibernateService.getSession();
@@ -81,8 +84,17 @@ public class AuthService {
         query.setInteger("user_id", this.logOnUser.getDatabaseId());
 
         @SuppressWarnings("unchecked")
-        List<RoleInterface> result = query.list();
+        List<ResourceWithRole> queryResult = query.list();
         session.close();
+
+        Method values = roleClass.getDeclaredMethod("values");
+        Object[] enumConstants = (Object[]) values.invoke(null);
+
+        List<RoleInterface> result = new ArrayList<>();
+
+        for (ResourceWithRole resourceWithRole : queryResult) {
+            result.add((RoleInterface) enumConstants[resourceWithRole.getRole()]);
+        }
 
         return result;
     }
@@ -95,7 +107,7 @@ public class AuthService {
         Query query = session.createQuery("from ResourceWithRole where resource_id = :resource_id AND user_id = :user_id AND role = :role");
         query.setInteger("resource_id", resource.getDatabaseId());
         query.setInteger("user_id", this.logOnUser.getDatabaseId());
-        query.setInteger("role", role.getValue());
+        query.setInteger("role", role.ordinal());
 
         try {
             List result = query.list();
