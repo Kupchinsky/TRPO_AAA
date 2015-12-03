@@ -77,7 +77,7 @@ public class AuthService {
 
     /* Для внешнего использования */
     @SuppressWarnings("unused")
-    public List<RoleInterface> getGrantedRoles(Resource resource, Class<? extends RoleInterface> roleClass) throws SQLException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    public List<RoleInterface> getGrantedRoles(Resource resource) throws SQLException, NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         AuthService.logger.debug("Getting roles for resource");
 
         Session session = this.hibernateService.getSession();
@@ -90,7 +90,7 @@ public class AuthService {
         List<ResourceWithRole> queryResult = query.list();
         session.close();
 
-        Method values = roleClass.getDeclaredMethod("values");
+        Method values = this.roleInterfaceClass.getDeclaredMethod("values");
         Object[] enumConstants = (Object[]) values.invoke(null);
 
         List<RoleInterface> result = new ArrayList<>();
