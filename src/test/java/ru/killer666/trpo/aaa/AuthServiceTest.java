@@ -5,6 +5,8 @@ import lombok.ToString;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.flywaydb.core.Flyway;
+import org.hibernate.Session;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -33,6 +35,7 @@ public class AuthServiceTest {
     private static final String JDBC_PASSWORD = "";
 
     private static AuthService authService = new AuthService(new HibernateService(JDBC_URL, JDBC_USERNAME, JDBC_PASSWORD, "org.hibernate.dialect.H2Dialect"), Role.class);
+    private static Session session;
 
     @BeforeClass
     public static void initialize() {
@@ -42,6 +45,13 @@ public class AuthServiceTest {
         flyway.setDataSource(JDBC_URL, JDBC_USERNAME, JDBC_PASSWORD);
         flyway.baseline();
         flyway.migrate();
+
+        session = authService.getHibernateService().getSession();
+    }
+
+    @AfterClass
+    public static void deinitialize() {
+        session.close();
     }
 
     @Test
@@ -49,7 +59,7 @@ public class AuthServiceTest {
         boolean result = false;
 
         try {
-            authService.authUser("XXX", "XXX");
+            authService.authUser(session, "XXX", "XXX");
         } catch (UserNotFoundException | IncorrectPasswordException e) {
             result = true;
         }
@@ -59,7 +69,7 @@ public class AuthServiceTest {
 
     @Test
     public void test2Auth() throws SQLException, UserNotFoundException, IncorrectPasswordException {
-        authService.authUser("jdoe", "sup3rpaZZ");
+        authService.authUser(session, "jdoe", "sup3rpaZZ");
     }
 
     @Test
@@ -68,7 +78,7 @@ public class AuthServiceTest {
         boolean result = false;
 
         try {
-            authService.authResource(authService.getResourceByName("a.bc"), Role.WRITE);
+            authService.authResource(session, authService.getResourceByName(session, "a.bc"), Role.WRITE);
         } catch (ResourceDeniedException e) {
             result = true;
         }
@@ -78,12 +88,12 @@ public class AuthServiceTest {
 
     @Test
     public void test4ResourceAccess() throws SQLException, ResourceNotFoundException, ResourceDeniedException {
-        authService.authResource(authService.getResourceByName("a.b"), Role.WRITE);
+        authService.authResource(session, authService.getResourceByName(session, "a.b"), Role.WRITE);
     }
 
     @Test
     public void test5ResourceAccess() throws SQLException, ResourceNotFoundException, ResourceDeniedException {
-        authService.authResource(authService.getResourceByName("a.bc"), Role.EXECUTE);
+        authService.authResource(session, authService.getResourceByName(session, "a.bc"), Role.EXECUTE);
     }
 
     @Test
@@ -93,7 +103,7 @@ public class AuthServiceTest {
 
         authService.getLogOnUserAccounting().setLogoutDate(format.parse("2017-01-10"));
         authService.getLogOnUserAccounting().increaseVolume(100);
-        authService.saveAccounting();
+        authService.saveAccounting(session);
     }
 
     @ToString
