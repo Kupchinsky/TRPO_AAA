@@ -20,7 +20,7 @@ public class ResourceWithRole {
     private User user;
 
     @ManyToOne
-    @JoinColumn(name = "resource_id", referencedColumnName = "id", nullable = false)
+    @JoinColumn(name = "resource_id", referencedColumnName = "id", nullable = true)
     private Resource parentResource;
 
     @Column(name = "role", nullable = false)
