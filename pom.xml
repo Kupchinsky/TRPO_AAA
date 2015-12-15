@@ -19,29 +19,6 @@
                     <target>1.8</target>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>2.4.1</version>
-                <executions>
-                    <execution>
-                    <phase>package</phase>
-                    <goals>
-                        <goal>shade</goal>
-                    </goals>
-                    <configuration>
-						<createDependencyReducedPom>false</createDependencyReducedPom>
-                        <artifactSet>
-                            <excludes>
-                                <exclude>org.projectlombok:lombok</exclude>
-                                <exclude>org.flywaydb:flyway-core</exclude>
-                                <exclude>com.h2database:h2</exclude>
-                            </excludes>
-                        </artifactSet>
-                    </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
     <reporting>
