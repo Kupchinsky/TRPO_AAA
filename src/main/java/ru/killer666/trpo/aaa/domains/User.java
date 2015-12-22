@@ -15,8 +15,8 @@ public class User {
     @GeneratedValue
     private int databaseId;
 
-    @Column(name = "login", unique = true, nullable = false)
-    private String login;
+    @Column(name = "userName", unique = true, nullable = false)
+    private String userName;
 
     @Column(name = "passwordHash", nullable = false)
     private String passwordHash;

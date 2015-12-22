@@ -21,7 +21,7 @@ public class ResourceWithRole {
 
     @ManyToOne
     @JoinColumn(name = "resource_id", referencedColumnName = "id", nullable = true)
-    private Resource parentResource;
+    private Resource resource;
 
     @Column(name = "role", nullable = false)
     private int role;

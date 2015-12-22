@@ -1,6 +1,7 @@
 package ru.killer666.trpo.aaa.domains;
 
 import lombok.Data;
+import lombok.NonNull;
 import lombok.ToString;
 
 import javax.persistence.*;
@@ -37,5 +38,16 @@ public class Accounting {
 
     public void increaseVolume(int inc) {
         this.volume += inc;
+    }
+
+    public Accounting pushResource(@NonNull ResourceWithRole resourceWithRole) {
+        AccountingResource accountingResource = new AccountingResource();
+
+        accountingResource.setAccounting(this);
+        accountingResource.setResourceWithRole(resourceWithRole);
+
+        this.getResources().add(accountingResource);
+
+        return this;
     }
 }
