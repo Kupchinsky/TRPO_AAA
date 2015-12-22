@@ -37,8 +37,8 @@ import java.util.*;
 import static org.junit.Assert.assertTrue;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class AuthServiceTest {
-    private static final Logger logger = LogManager.getLogger(AuthServiceTest.class);
+public class AllInOneTest {
+    private static final Logger logger = LogManager.getLogger(AllInOneTest.class);
 
     private static final String JDBC_URL = "jdbc:h2:./target/aaa";
     private static final String JDBC_USERNAME = "sa";
