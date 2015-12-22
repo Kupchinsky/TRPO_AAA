@@ -6,6 +6,7 @@ import lombok.ToString;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.flywaydb.core.Flyway;
+import org.h2.store.fs.FileUtils;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.AnnotationConfiguration;
@@ -28,7 +29,6 @@ import ru.killer666.trpo.aaa.services.AccountingService;
 import ru.killer666.trpo.aaa.services.AuthorizationService;
 import ru.killer666.trpo.aaa.services.RoleResolverService;
 
-import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -48,12 +48,12 @@ public class AuthServiceTest {
     private static AuthorizationService authorizationService;
     private static AccountingService accountingService;
 
-    private User authorizedUser;
-    private Accounting accounting;
+    private static User authorizedUser;
+    private static Accounting accounting;
 
     @Configuration
     @Import(BeanConfiguration.class)
-    public class TestBeanConfiguration {
+    public static class TestBeanConfiguration {
         @Bean
         RoleResolverService roleResolverService() {
             return new RoleResolverServiceImpl();
@@ -72,7 +72,7 @@ public class AuthServiceTest {
         }
     }
 
-    public class RoleResolverServiceImpl implements RoleResolverService {
+    public static class RoleResolverServiceImpl implements RoleResolverService {
         public Enum<?> resolve(int ordinal) {
             EnumSet<RoleEnum> set = EnumSet.allOf(RoleEnum.class);
 
@@ -96,13 +96,13 @@ public class AuthServiceTest {
 
     @BeforeClass
     public static void initialize() {
-        logger.debug("Migrating");
+        logger.debug("Cleaning old data");
+        FileUtils.tryDelete("target/aaa.mv.db");
+        FileUtils.tryDelete("target/aaa.trace.db");
 
-        Flyway flyway = new Flyway();
-        flyway.setDataSource(JDBC_URL, JDBC_USERNAME, JDBC_PASSWORD);
-        flyway.baseline();
-        flyway.migrate();
+        logger.debug("Initialialing hibernate");
 
+        System.setProperty("org.jboss.logging.provider", "slf4j");
         SessionFactory sessionFactory;
 
         try {
@@ -112,6 +112,7 @@ public class AuthServiceTest {
             prop.setProperty("hibernate.connection.username", JDBC_USERNAME);
             prop.setProperty("hibernate.connection.password", JDBC_PASSWORD);
             prop.setProperty("dialect", "org.hibernate.dialect.H2Dialect");
+            prop.setProperty("org.jboss.logging.provider", "slf4j");
 
             AnnotationConfiguration annotationConfiguration = new AnnotationConfiguration()
                     .addPackage("ru.killer666.trpo.aaa.domains")
@@ -138,7 +139,13 @@ public class AuthServiceTest {
 
         session = sessionFactory.openSession();
 
-        // Initializing Spring app
+        logger.debug("Migrating");
+        Flyway flyway = new Flyway();
+        flyway.setDataSource(JDBC_URL, JDBC_USERNAME, JDBC_PASSWORD);
+        flyway.baseline();
+        flyway.migrate();
+
+        logger.debug("Initializing Spring app");
         ApplicationContext context = new AnnotationConfigApplicationContext(TestBeanConfiguration.class);
 
         authorizationService = context.getBean(AuthorizationService.class);
@@ -151,7 +158,7 @@ public class AuthServiceTest {
     }
 
     @Test
-    public void test1Auth() throws SQLException {
+    public void test1Auth() {
         boolean result = false;
 
         try {
@@ -165,8 +172,8 @@ public class AuthServiceTest {
 
     @Test
     public void test2Auth() throws UserNotFoundException, IncorrectPasswordException {
-        this.authorizedUser = authorizationService.authorizeUser(session, "jdoe", "sup3rpaZZ");
-        this.accounting = accountingService.createForUser(this.authorizedUser);
+        authorizedUser = authorizationService.authorizeUser(session, "jdoe", "sup3rpaZZ");
+        accounting = accountingService.createForUser(authorizedUser);
     }
 
     @Test
@@ -175,7 +182,7 @@ public class AuthServiceTest {
 
         try {
             Resource resource = authorizationService.findResourceByName(session, "a.bc");
-            authorizationService.authorizeOnResource(session, this.authorizedUser, resource, RoleEnum.WRITE);
+            authorizationService.authorizeOnResource(session, authorizedUser, resource, RoleEnum.WRITE);
         } catch (ResourceDeniedException e) {
             result = true;
         }
@@ -186,17 +193,17 @@ public class AuthServiceTest {
     @Test
     public void test4ResourceAccess() throws ResourceNotFoundException, ResourceDeniedException {
         Resource resource = authorizationService.findResourceByName(session, "a.b");
-        ResourceWithRole resourceWithRole = authorizationService.authorizeOnResource(session, this.authorizedUser, resource, RoleEnum.WRITE);
+        ResourceWithRole resourceWithRole = authorizationService.authorizeOnResource(session, authorizedUser, resource, RoleEnum.WRITE);
 
-        this.accounting.pushResource(resourceWithRole);
+        accounting.pushResource(resourceWithRole);
     }
 
     @Test
     public void test5ResourceAccess() throws ResourceNotFoundException, ResourceDeniedException {
         Resource resource = authorizationService.findResourceByName(session, "a.bc");
-        ResourceWithRole resourceWithRole = authorizationService.authorizeOnResource(session, this.authorizedUser, resource, RoleEnum.EXECUTE);
+        ResourceWithRole resourceWithRole = authorizationService.authorizeOnResource(session, authorizedUser, resource, RoleEnum.EXECUTE);
 
-        this.accounting.pushResource(resourceWithRole);
+        accounting.pushResource(resourceWithRole);
     }
 
     @Test
@@ -204,10 +211,8 @@ public class AuthServiceTest {
 
         DateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH);
 
-        this.accounting.setLogoutDate(format.parse("2017-01-10"));
-        this.accounting.increaseVolume(100);
-        accountingService.save(session, this.accounting);
+        accounting.setLogoutDate(format.parse("2017-01-10"));
+        accounting.increaseVolume(100);
+        accountingService.save(session, accounting);
     }
-
-
 }

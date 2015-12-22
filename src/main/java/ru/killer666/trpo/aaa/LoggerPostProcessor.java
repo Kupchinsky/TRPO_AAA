@@ -21,7 +21,7 @@ public class LoggerPostProcessor implements BeanPostProcessor {
 
         for (Field field : fields) {
             if (Logger.class.isAssignableFrom(field.getType()) && field.getAnnotation(InjectLogger.class) != null) {
-                if ((field.getModifiers() & Modifier.STATIC) == 0) {
+                if (Modifier.isStatic(field.getModifiers())) {
                     field.setAccessible(true);
 
                     try {
