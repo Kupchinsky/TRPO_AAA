@@ -1,4 +1,4 @@
-INSERT INTO `users` (`id`, `login`, `passwordHash`, `salt`, `personName`) VALUES
+INSERT INTO `users` (`id`, `userName`, `passwordHash`, `salt`, `personName`) VALUES
 	(1, 'jdoe', '9433735ce5af6e1fc41b7182457c377ab6b65975', 'wjw6YPcIs5', 'John Doe'),
 	(2, 'jrow', 'd50cb8c6a59ec55af6d46e27a640775af6098128', 'ROyqeKuULB', 'Jane Row');
 
