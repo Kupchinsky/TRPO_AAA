@@ -119,7 +119,6 @@ public class AllInOneTest {
                     .addProperties(prop);
 
             List<Class<?>> annotatedClasses = new ArrayList<>();
-            annotatedClasses.add(RoleEnum.class);
 
             for (Class cls : annotatedClasses) {
                 annotationConfiguration.addAnnotatedClass(cls);
