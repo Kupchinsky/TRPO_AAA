@@ -93,7 +93,6 @@ public class AllInOneTest {
             prop.setProperty("hibernate.connection.username", JDBC_USERNAME);
             prop.setProperty("hibernate.connection.password", JDBC_PASSWORD);
             prop.setProperty("dialect", "org.hibernate.dialect.H2Dialect");
-            prop.setProperty("org.jboss.logging.provider", "slf4j");
 
             AnnotationConfiguration annotationConfiguration = new AnnotationConfiguration()
                     .addPackage("ru.killer666.trpo.aaa.domains")
