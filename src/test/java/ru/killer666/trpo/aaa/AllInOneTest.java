@@ -7,10 +7,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.flywaydb.core.Flyway;
 import org.h2.store.fs.FileUtils;
-import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.AnnotationConfiguration;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -27,12 +25,16 @@ import ru.killer666.trpo.aaa.exceptions.ResourceNotFoundException;
 import ru.killer666.trpo.aaa.exceptions.UserNotFoundException;
 import ru.killer666.trpo.aaa.services.AccountingService;
 import ru.killer666.trpo.aaa.services.AuthorizationService;
+import ru.killer666.trpo.aaa.services.HibernateSessionService;
 import ru.killer666.trpo.aaa.services.RoleResolverService;
 
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.EnumSet;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Properties;
 
 import static org.junit.Assert.assertTrue;
 
@@ -44,7 +46,6 @@ public class AllInOneTest {
     private static final String JDBC_USERNAME = "sa";
     private static final String JDBC_PASSWORD = "";
 
-    private static Session session;
     private static AuthorizationService authorizationService;
     private static AccountingService accountingService;
 
@@ -57,6 +58,56 @@ public class AllInOneTest {
         @Bean
         RoleResolverService roleResolverService() {
             return new RoleResolverServiceImpl();
+        }
+
+        @Bean
+        HibernateSessionService sessionFactoryFactory() {
+            return new SessionFactoryBean();
+        }
+    }
+
+    public static class SessionFactoryBean implements HibernateSessionService {
+        private SessionFactory savedObject;
+
+        @Override
+        public SessionFactory getObject() throws Exception {
+            if (this.savedObject == null) {
+                try {
+                    Properties prop = new Properties();
+                    prop.setProperty("hibernate.hbm2ddl.auto", "update");
+                    prop.setProperty("hibernate.connection.url", JDBC_URL);
+                    prop.setProperty("hibernate.connection.username", JDBC_USERNAME);
+                    prop.setProperty("hibernate.connection.password", JDBC_PASSWORD);
+                    prop.setProperty("dialect", "org.hibernate.dialect.H2Dialect");
+                    prop.setProperty("org.jboss.logging.provider", "slf4j");
+
+                    AnnotationConfiguration annotationConfiguration = new AnnotationConfiguration()
+                            .addPackage("ru.killer666.trpo.aaa.domains")
+                            .addProperties(prop);
+
+                    annotationConfiguration.addAnnotatedClass(User.class)
+                            .addAnnotatedClass(Resource.class)
+                            .addAnnotatedClass(ResourceWithRole.class)
+                            .addAnnotatedClass(Accounting.class)
+                            .addAnnotatedClass(AccountingResource.class);
+
+                    this.savedObject = annotationConfiguration.buildSessionFactory();
+                } catch (Throwable ex) {
+                    throw new ExceptionInInitializerError(ex);
+                }
+            }
+
+            return this.savedObject;
+        }
+
+        @Override
+        public Class<?> getObjectType() {
+            return SessionFactory.class;
+        }
+
+        @Override
+        public boolean isSingleton() {
+            return true;
         }
     }
 
@@ -100,60 +151,25 @@ public class AllInOneTest {
         FileUtils.tryDelete("target/aaa.mv.db");
         FileUtils.tryDelete("target/aaa.trace.db");
 
-        logger.debug("Initialialing hibernate");
-
         System.setProperty("org.jboss.logging.provider", "slf4j");
-        SessionFactory sessionFactory;
-
-        try {
-            Properties prop = new Properties();
-            prop.setProperty("hibernate.hbm2ddl.auto", "update");
-            prop.setProperty("hibernate.connection.url", JDBC_URL);
-            prop.setProperty("hibernate.connection.username", JDBC_USERNAME);
-            prop.setProperty("hibernate.connection.password", JDBC_PASSWORD);
-            prop.setProperty("dialect", "org.hibernate.dialect.H2Dialect");
-            prop.setProperty("org.jboss.logging.provider", "slf4j");
-
-            AnnotationConfiguration annotationConfiguration = new AnnotationConfiguration()
-                    .addPackage("ru.killer666.trpo.aaa.domains")
-                    .addProperties(prop);
-
-            List<Class<?>> annotatedClasses = new ArrayList<>();
-
-            for (Class cls : annotatedClasses) {
-                annotationConfiguration.addAnnotatedClass(cls);
-                logger.debug("Added custom annotated class: " + cls.getSimpleName());
-            }
-
-            annotationConfiguration.addAnnotatedClass(User.class)
-                    .addAnnotatedClass(Resource.class)
-                    .addAnnotatedClass(ResourceWithRole.class)
-                    .addAnnotatedClass(Accounting.class)
-                    .addAnnotatedClass(AccountingResource.class);
-
-            sessionFactory = annotationConfiguration.buildSessionFactory();
-        } catch (Throwable ex) {
-            throw new ExceptionInInitializerError(ex);
-        }
-
-        session = sessionFactory.openSession();
-
-        logger.debug("Migrating");
-        Flyway flyway = new Flyway();
-        flyway.setDataSource(JDBC_URL, JDBC_USERNAME, JDBC_PASSWORD);
-        flyway.baseline();
-        flyway.migrate();
 
         logger.debug("Initializing Spring app");
         ApplicationContext context = new AnnotationConfigApplicationContext(TestBeanConfiguration.class);
 
         authorizationService = context.getBean(AuthorizationService.class);
         accountingService = context.getBean(AccountingService.class);
-    }
 
-    @AfterClass
-    public static void deinitialize() {
-        session.close();
+        try {
+            context.getBean(HibernateSessionService.class).getObject();
+        } catch (Exception e) {
+            throw new ExceptionInInitializerError(e);
+        }
+
+        logger.debug("Migrating");
+        Flyway flyway = new Flyway();
+        flyway.setDataSource(JDBC_URL, JDBC_USERNAME, JDBC_PASSWORD);
+        flyway.baseline();
+        flyway.migrate();
     }
 
     @Test
@@ -161,7 +177,7 @@ public class AllInOneTest {
         boolean result = false;
 
         try {
-            authorizationService.authorizeUser(session, "XXX", "XXX");
+            authorizationService.authorizeUser("XXX", "XXX");
         } catch (UserNotFoundException | IncorrectPasswordException e) {
             result = true;
         }
@@ -171,7 +187,7 @@ public class AllInOneTest {
 
     @Test
     public void test2Auth() throws UserNotFoundException, IncorrectPasswordException {
-        authorizedUser = authorizationService.authorizeUser(session, "jdoe", "sup3rpaZZ");
+        authorizedUser = authorizationService.authorizeUser("jdoe", "sup3rpaZZ");
         accounting = accountingService.createForUser(authorizedUser);
     }
 
@@ -180,8 +196,8 @@ public class AllInOneTest {
         boolean result = false;
 
         try {
-            Resource resource = authorizationService.findResourceByName(session, "a.bc");
-            authorizationService.authorizeOnResource(session, authorizedUser, resource, RoleEnum.WRITE);
+            Resource resource = authorizationService.findResourceByName("a.bc");
+            authorizationService.authorizeOnResource(authorizedUser, resource, RoleEnum.WRITE);
         } catch (ResourceDeniedException e) {
             result = true;
         }
@@ -191,16 +207,16 @@ public class AllInOneTest {
 
     @Test
     public void test4ResourceAccess() throws ResourceNotFoundException, ResourceDeniedException {
-        Resource resource = authorizationService.findResourceByName(session, "a.b");
-        ResourceWithRole resourceWithRole = authorizationService.authorizeOnResource(session, authorizedUser, resource, RoleEnum.WRITE);
+        Resource resource = authorizationService.findResourceByName("a.b");
+        ResourceWithRole resourceWithRole = authorizationService.authorizeOnResource(authorizedUser, resource, RoleEnum.WRITE);
 
         accounting.pushResource(resourceWithRole);
     }
 
     @Test
     public void test5ResourceAccess() throws ResourceNotFoundException, ResourceDeniedException {
-        Resource resource = authorizationService.findResourceByName(session, "a.bc");
-        ResourceWithRole resourceWithRole = authorizationService.authorizeOnResource(session, authorizedUser, resource, RoleEnum.EXECUTE);
+        Resource resource = authorizationService.findResourceByName("a.bc");
+        ResourceWithRole resourceWithRole = authorizationService.authorizeOnResource(authorizedUser, resource, RoleEnum.EXECUTE);
 
         accounting.pushResource(resourceWithRole);
     }
@@ -212,6 +228,6 @@ public class AllInOneTest {
 
         accounting.setLogoutDate(format.parse("2017-01-10"));
         accounting.increaseVolume(100);
-        accountingService.save(session, accounting);
+        accountingService.save(accounting);
     }
 }

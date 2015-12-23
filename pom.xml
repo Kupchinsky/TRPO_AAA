@@ -6,7 +6,7 @@
 
 	<groupId>ru.killer666.aaa</groupId>
 	<artifactId>core</artifactId>
-	<version>6.0</version>
+	<version>6.1</version>
 
 	<build>
 		<plugins>
@@ -115,6 +115,11 @@
 					<artifactId>commons-logging</artifactId>
 				</exclusion>
 			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-orm</artifactId>
+			<version>4.2.4.RELEASE</version>
 		</dependency>
 
 		<!-- Other -->
