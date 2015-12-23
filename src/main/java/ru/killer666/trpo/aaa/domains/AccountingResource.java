@@ -1,5 +1,6 @@
 package ru.killer666.trpo.aaa.domains;
 
+import com.google.gson.annotations.Expose;
 import lombok.Data;
 import lombok.ToString;
 
@@ -13,6 +14,7 @@ public class AccountingResource {
     @Id
     @Column(name = "id")
     @GeneratedValue
+    @Expose
     private int databaseId;
 
     @ManyToOne

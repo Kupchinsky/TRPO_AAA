@@ -19,6 +19,7 @@ public class Accounting {
     @Id
     @Column(name = "id")
     @GeneratedValue
+	@Expose
     private int databaseId;
 
     @ManyToOne
@@ -26,7 +27,7 @@ public class Accounting {
     @Expose
     private User user;
 
-    @OneToMany(mappedBy = "accounting")
+    @OneToMany(mappedBy = "accounting", fetch = FetchType.EAGER)
     @Expose
     private List<AccountingResource> resources = new ArrayList<>();
 
