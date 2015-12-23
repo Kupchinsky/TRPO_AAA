@@ -13,6 +13,7 @@ import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -66,38 +67,12 @@ public class AllInOneTest {
         }
     }
 
-    public static class SessionFactoryBean implements HibernateSessionService {
-        private SessionFactory savedObject;
+    public static class SessionFactoryBean implements HibernateSessionService, InitializingBean {
+        private SessionFactory sessionFactory;
 
         @Override
         public SessionFactory getObject() throws Exception {
-            if (this.savedObject == null) {
-                try {
-                    Properties prop = new Properties();
-                    prop.setProperty("hibernate.hbm2ddl.auto", "update");
-                    prop.setProperty("hibernate.connection.url", JDBC_URL);
-                    prop.setProperty("hibernate.connection.username", JDBC_USERNAME);
-                    prop.setProperty("hibernate.connection.password", JDBC_PASSWORD);
-                    prop.setProperty("dialect", "org.hibernate.dialect.H2Dialect");
-                    prop.setProperty("org.jboss.logging.provider", "slf4j");
-
-                    AnnotationConfiguration annotationConfiguration = new AnnotationConfiguration()
-                            .addPackage("ru.killer666.trpo.aaa.domains")
-                            .addProperties(prop);
-
-                    annotationConfiguration.addAnnotatedClass(User.class)
-                            .addAnnotatedClass(Resource.class)
-                            .addAnnotatedClass(ResourceWithRole.class)
-                            .addAnnotatedClass(Accounting.class)
-                            .addAnnotatedClass(AccountingResource.class);
-
-                    this.savedObject = annotationConfiguration.buildSessionFactory();
-                } catch (Throwable ex) {
-                    throw new ExceptionInInitializerError(ex);
-                }
-            }
-
-            return this.savedObject;
+            return this.sessionFactory;
         }
 
         @Override
@@ -108,6 +83,29 @@ public class AllInOneTest {
         @Override
         public boolean isSingleton() {
             return true;
+        }
+
+        @Override
+        public void afterPropertiesSet() throws Exception {
+            Properties prop = new Properties();
+            prop.setProperty("hibernate.hbm2ddl.auto", "update");
+            prop.setProperty("hibernate.connection.url", JDBC_URL);
+            prop.setProperty("hibernate.connection.username", JDBC_USERNAME);
+            prop.setProperty("hibernate.connection.password", JDBC_PASSWORD);
+            prop.setProperty("dialect", "org.hibernate.dialect.H2Dialect");
+            prop.setProperty("org.jboss.logging.provider", "slf4j");
+
+            AnnotationConfiguration annotationConfiguration = new AnnotationConfiguration()
+                    .addPackage("ru.killer666.trpo.aaa.domains")
+                    .addProperties(prop);
+
+            annotationConfiguration.addAnnotatedClass(User.class)
+                    .addAnnotatedClass(Resource.class)
+                    .addAnnotatedClass(ResourceWithRole.class)
+                    .addAnnotatedClass(Accounting.class)
+                    .addAnnotatedClass(AccountingResource.class);
+
+            this.sessionFactory = annotationConfiguration.buildSessionFactory();
         }
     }
 
