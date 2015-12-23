@@ -1,5 +1,6 @@
 package ru.killer666.trpo.aaa.domains;
 
+import com.google.gson.annotations.Expose;
 import lombok.Data;
 import lombok.ToString;
 
@@ -13,6 +14,7 @@ public class ResourceWithRole {
     @Id
     @Column(name = "id")
     @GeneratedValue
+    @Expose(deserialize = false)
     private int databaseId;
 
     @ManyToOne
@@ -21,8 +23,10 @@ public class ResourceWithRole {
 
     @ManyToOne
     @JoinColumn(name = "resource_id", referencedColumnName = "id", nullable = true)
+    @Expose
     private Resource resource;
 
     @Column(name = "role", nullable = false)
+    @Expose
     private int role;
 }

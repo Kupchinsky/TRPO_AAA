@@ -1,5 +1,6 @@
 package ru.killer666.trpo.aaa.domains;
 
+import com.google.gson.annotations.Expose;
 import lombok.Data;
 import lombok.ToString;
 
@@ -13,9 +14,11 @@ public class Resource implements Comparable<Resource> {
     @Id
     @Column(name = "id")
     @GeneratedValue
+    @Expose(deserialize = false)
     private int databaseId;
 
     @Column(name = "name", unique = true, nullable = false)
+    @Expose
     private String name;
 
     @ManyToOne
