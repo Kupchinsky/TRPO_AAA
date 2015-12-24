@@ -7,26 +7,29 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.flywaydb.core.Flyway;
 import org.h2.store.fs.FileUtils;
-import org.hibernate.SessionFactory;
-import org.hibernate.cfg.AnnotationConfiguration;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import ru.killer666.trpo.aaa.domains.*;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.orm.hibernate4.HibernateTransactionManager;
+import org.springframework.orm.hibernate4.LocalSessionFactoryBean;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
+import ru.killer666.trpo.aaa.domains.Accounting;
+import ru.killer666.trpo.aaa.domains.Resource;
+import ru.killer666.trpo.aaa.domains.ResourceWithRole;
+import ru.killer666.trpo.aaa.domains.User;
 import ru.killer666.trpo.aaa.exceptions.IncorrectPasswordException;
 import ru.killer666.trpo.aaa.exceptions.ResourceDeniedException;
 import ru.killer666.trpo.aaa.exceptions.ResourceNotFoundException;
 import ru.killer666.trpo.aaa.exceptions.UserNotFoundException;
 import ru.killer666.trpo.aaa.services.AccountingService;
 import ru.killer666.trpo.aaa.services.AuthorizationService;
-import ru.killer666.trpo.aaa.services.HibernateSessionService;
 import ru.killer666.trpo.aaa.services.RoleResolverService;
 
 import java.text.DateFormat;
@@ -54,6 +57,7 @@ public class AllInOneTest {
     private static Accounting accounting;
 
     @Configuration
+    @EnableTransactionManagement
     @Import(BeanConfiguration.class)
     public static class TestBeanConfiguration {
         @Bean
@@ -62,49 +66,42 @@ public class AllInOneTest {
         }
 
         @Bean
-        HibernateSessionService sessionFactoryFactory() {
-            return new SessionFactoryBean();
-        }
-    }
+        public HibernateTransactionManager hibernateTransactionManager() {
+            HibernateTransactionManager hibernateTransactionManager = new HibernateTransactionManager();
 
-    public static class SessionFactoryBean implements HibernateSessionService, InitializingBean {
-        private SessionFactory sessionFactory;
+            hibernateTransactionManager.setDataSource(this.driverManagerDataSource());
+            hibernateTransactionManager.setSessionFactory(this.localSessionFactoryBean().getObject());
 
-        @Override
-        public SessionFactory getObject() throws Exception {
-            return this.sessionFactory;
+            return hibernateTransactionManager;
         }
 
-        @Override
-        public Class<?> getObjectType() {
-            return SessionFactory.class;
+        @Bean
+        public DriverManagerDataSource driverManagerDataSource() {
+            DriverManagerDataSource driverManagerDataSource = new DriverManagerDataSource();
+
+            driverManagerDataSource.setUrl(JDBC_URL);
+            driverManagerDataSource.setUsername(JDBC_USERNAME);
+            driverManagerDataSource.setPassword(JDBC_PASSWORD);
+
+            return driverManagerDataSource;
         }
 
-        @Override
-        public boolean isSingleton() {
-            return true;
-        }
+        @Bean
+        public LocalSessionFactoryBean localSessionFactoryBean() {
+            System.setProperty("org.jboss.logging.provider", "slf4j");
 
-        @Override
-        public void afterPropertiesSet() throws Exception {
-            Properties prop = new Properties();
-            prop.setProperty("hibernate.hbm2ddl.auto", "update");
-            prop.setProperty("hibernate.connection.url", JDBC_URL);
-            prop.setProperty("hibernate.connection.username", JDBC_USERNAME);
-            prop.setProperty("hibernate.connection.password", JDBC_PASSWORD);
-            prop.setProperty("dialect", "org.hibernate.dialect.H2Dialect");
+            LocalSessionFactoryBean localSessionFactoryBean = new LocalSessionFactoryBean();
 
-            AnnotationConfiguration annotationConfiguration = new AnnotationConfiguration()
-                    .addPackage("ru.killer666.trpo.aaa.domains")
-                    .addProperties(prop);
+            Properties hibernateProperties = new Properties();
+            hibernateProperties.setProperty("hibernate.hbm2ddl.auto", "update");
+            hibernateProperties.setProperty("hibernate.current_session_context_class", "org.hibernate.context.internal.ThreadLocalSessionContext");
+            hibernateProperties.setProperty("dialect", "org.hibernate.dialect.H2Dialect");
 
-            annotationConfiguration.addAnnotatedClass(User.class)
-                    .addAnnotatedClass(Resource.class)
-                    .addAnnotatedClass(ResourceWithRole.class)
-                    .addAnnotatedClass(Accounting.class)
-                    .addAnnotatedClass(AccountingResource.class);
+            localSessionFactoryBean.setHibernateProperties(hibernateProperties);
+            localSessionFactoryBean.setPackagesToScan("ru.killer666.trpo.aaa");
+            localSessionFactoryBean.setDataSource(this.driverManagerDataSource());
 
-            this.sessionFactory = annotationConfiguration.buildSessionFactory();
+            return localSessionFactoryBean;
         }
     }
 
@@ -144,25 +141,19 @@ public class AllInOneTest {
 
     @BeforeClass
     public static void initialize() {
-        logger.debug("Cleaning old data");
+        logger.warn("Cleaning old data");
         FileUtils.tryDelete("target/aaa.mv.db");
         FileUtils.tryDelete("target/aaa.trace.db");
 
         System.setProperty("org.jboss.logging.provider", "slf4j");
 
-        logger.debug("Initializing Spring app");
+        logger.warn("Initializing Spring app");
         ApplicationContext context = new AnnotationConfigApplicationContext(TestBeanConfiguration.class);
 
         authorizationService = context.getBean(AuthorizationService.class);
         accountingService = context.getBean(AccountingService.class);
 
-        try {
-            context.getBean(HibernateSessionService.class).getObject();
-        } catch (Exception e) {
-            throw new ExceptionInInitializerError(e);
-        }
-
-        logger.debug("Migrating");
+        logger.warn("Migrating");
         Flyway flyway = new Flyway();
         flyway.setDataSource(JDBC_URL, JDBC_USERNAME, JDBC_PASSWORD);
         flyway.baseline();

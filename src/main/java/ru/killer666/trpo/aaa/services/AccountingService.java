@@ -2,6 +2,7 @@ package ru.killer666.trpo.aaa.services;
 
 import lombok.NonNull;
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +19,7 @@ public class AccountingService {
     private static Logger logger;
 
     @Autowired
-    private HibernateSessionService sessionFactory;
+    private SessionFactory sessionFactory;
 
     public Accounting createForUser(@NonNull User user) {
         Accounting accounting = new Accounting();
@@ -35,14 +36,7 @@ public class AccountingService {
 
         logger.debug("Saving accounting");
 
-        Session session;
-
-        try {
-            session = this.sessionFactory.getObject().openSession();
-        } catch (Exception e) {
-            logger.error("Exception while opening session", e);
-            throw new RuntimeException(e);
-        }
+        Session session = this.sessionFactory.getCurrentSession();
 
         Transaction tx = session.beginTransaction();
 
@@ -50,6 +44,5 @@ public class AccountingService {
         accounting.getResources().forEach(session::save);
 
         tx.commit();
-        session.close();
     }
 }

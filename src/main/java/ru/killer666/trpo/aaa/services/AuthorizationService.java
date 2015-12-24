@@ -4,6 +4,8 @@ import lombok.NonNull;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 import org.hibernate.criterion.Expression;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +31,7 @@ public class AuthorizationService {
     private RoleResolverService roleResolverService;
 
     @Autowired
-    private HibernateSessionService sessionFactory;
+    private SessionFactory sessionFactory;
 
     private String encryptPassword(String password, String salt) {
         return DigestUtils.shaHex(DigestUtils.shaHex(password) + salt);
@@ -38,19 +40,14 @@ public class AuthorizationService {
     public List<Resource> getAllResources() {
         logger.debug("Fetching all resources");
 
-        Session session;
+        Session session = this.sessionFactory.getCurrentSession();
 
-        try {
-            session = this.sessionFactory.getObject().openSession();
-        } catch (Exception e) {
-            logger.error("Exception while opening session", e);
-            throw new RuntimeException(e);
-        }
+        Transaction tx = session.beginTransaction();
 
         @SuppressWarnings("unchecked")
         List<Resource> resources = session.createCriteria(Resource.class).list();
 
-        session.close();
+        tx.commit();
 
         return resources;
     }
@@ -58,21 +55,16 @@ public class AuthorizationService {
     public Resource findResourceByName(@NonNull String resourceName) throws ResourceNotFoundException {
         logger.debug("Fetching resource " + resourceName);
 
-        Session session;
+        Session session = this.sessionFactory.getCurrentSession();
 
-        try {
-            session = this.sessionFactory.getObject().openSession();
-        } catch (Exception e) {
-            logger.error("Exception while opening session", e);
-            throw new RuntimeException(e);
-        }
+        Transaction tx = session.beginTransaction();
 
         Criteria criteria = session.createCriteria(Resource.class);
         criteria.add(Expression.eq("name", resourceName));
 
         List result = criteria.list();
 
-        session.close();
+        tx.commit();
 
         if (result.size() == 0) {
             throw new ResourceNotFoundException(resourceName);
@@ -84,14 +76,9 @@ public class AuthorizationService {
     public List<Enum<?>> findGrantedRolesForResource(@NonNull User user, @NonNull Resource resource) {
         logger.debug("Getting granted roles for resource");
 
-        Session session;
+        Session session = this.sessionFactory.getCurrentSession();
 
-        try {
-            session = this.sessionFactory.getObject().openSession();
-        } catch (Exception e) {
-            logger.error("Exception while opening session", e);
-            throw new RuntimeException(e);
-        }
+        Transaction tx = session.beginTransaction();
 
         Criteria criteria = session.createCriteria(ResourceWithRole.class);
         criteria.add(Expression.eq("resource", resource));
@@ -99,14 +86,13 @@ public class AuthorizationService {
 
         @SuppressWarnings("unchecked")
         List<ResourceWithRole> queryResult = criteria.list();
-
-        session.close();
-
         List<Enum<?>> result = new ArrayList<>();
 
         for (ResourceWithRole resourceWithRole : queryResult) {
             result.add(this.roleResolverService.resolve(resourceWithRole.getRole()));
         }
+
+        tx.commit();
 
         return result;
     }
@@ -115,14 +101,9 @@ public class AuthorizationService {
                                                 @NonNull Enum<?> role) throws ResourceNotFoundException, ResourceDeniedException {
         logger.debug("Authorizing on resource");
 
-        Session session;
+        Session session = this.sessionFactory.getCurrentSession();
 
-        try {
-            session = this.sessionFactory.getObject().openSession();
-        } catch (Exception e) {
-            logger.error("Exception while opening session", e);
-            throw new RuntimeException(e);
-        }
+        Transaction tx = session.beginTransaction();
 
         Criteria criteria = session.createCriteria(ResourceWithRole.class);
         criteria.add(Expression.eq("resource", resource));
@@ -131,7 +112,7 @@ public class AuthorizationService {
 
         List queryResult = criteria.list();
 
-        session.close();
+        tx.commit();
 
         if (queryResult.size() == 0) {
             throw new ResourceDeniedException(resource.getName(), user.getUserName());
@@ -146,21 +127,16 @@ public class AuthorizationService {
     public User authorizeUser(@NonNull String userName, @NonNull String password) throws UserNotFoundException, IncorrectPasswordException {
         logger.debug("Authorizing user");
 
-        Session session;
+        Session session = this.sessionFactory.getCurrentSession();
 
-        try {
-            session = this.sessionFactory.getObject().openSession();
-        } catch (Exception e) {
-            logger.error("Exception while opening session", e);
-            throw new RuntimeException(e);
-        }
+        Transaction tx = session.beginTransaction();
 
         Criteria criteria = session.createCriteria(User.class);
         criteria.add(Expression.eq("userName", userName));
 
         List result = criteria.list();
 
-        session.close();
+        tx.commit();
 
         if (result.size() == 0) {
             throw new UserNotFoundException(userName);
