@@ -28,7 +28,6 @@ public class Accounting {
     private User user;
 
     @OneToMany(mappedBy = "accounting", fetch = FetchType.EAGER)
-    @Expose
     private List<AccountingResource> resources = new ArrayList<>();
 
     @Column(name = "volume", nullable = false)
