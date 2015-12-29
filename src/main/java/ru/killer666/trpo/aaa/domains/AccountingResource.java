@@ -19,6 +19,7 @@ public class AccountingResource {
 
     @ManyToOne
     @JoinColumn(name = "accounting_id", referencedColumnName = "id", nullable = false)
+    @Expose
     private Accounting accounting;
 
     @ManyToOne

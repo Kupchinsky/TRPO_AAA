@@ -6,7 +6,7 @@
 
 	<groupId>ru.killer666.aaa</groupId>
 	<artifactId>core</artifactId>
-	<version>8.0</version>
+	<version>8.1</version>
 
 	<build>
 		<plugins>
