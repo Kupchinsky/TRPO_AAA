@@ -7,6 +7,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.flywaydb.core.Flyway;
 import org.h2.store.fs.FileUtils;
+import org.hibernate.SessionFactory;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -49,6 +51,8 @@ public class AllInOneTest {
     private static final String JDBC_URL = "jdbc:h2:./target/aaa";
     private static final String JDBC_USERNAME = "sa";
     private static final String JDBC_PASSWORD = "";
+
+    private static ApplicationContext context;
 
     private static AuthorizationService authorizationService;
     private static AccountingService accountingService;
@@ -148,7 +152,7 @@ public class AllInOneTest {
         System.setProperty("org.jboss.logging.provider", "slf4j");
 
         logger.warn("Initializing Spring app");
-        ApplicationContext context = new AnnotationConfigApplicationContext(TestBeanConfiguration.class);
+        context = new AnnotationConfigApplicationContext(TestBeanConfiguration.class);
 
         authorizationService = context.getBean(AuthorizationService.class);
         accountingService = context.getBean(AccountingService.class);
@@ -158,6 +162,15 @@ public class AllInOneTest {
         flyway.setDataSource(JDBC_URL, JDBC_USERNAME, JDBC_PASSWORD);
         flyway.baseline();
         flyway.migrate();
+
+        SessionFactory sessionFactory = context.getBean(SessionFactory.class);
+        sessionFactory.getCurrentSession().beginTransaction();
+    }
+
+    @AfterClass
+    public static void deinitialize() {
+        SessionFactory sessionFactory = context.getBean(SessionFactory.class);
+        sessionFactory.getCurrentSession().getTransaction().commit();
     }
 
     @Test
