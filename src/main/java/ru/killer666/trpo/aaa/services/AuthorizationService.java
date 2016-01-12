@@ -5,11 +5,11 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
 import org.hibernate.criterion.Expression;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.killer666.trpo.aaa.InjectLogger;
 import ru.killer666.trpo.aaa.domains.Resource;
 import ru.killer666.trpo.aaa.domains.ResourceWithRole;
@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@Transactional
 public class AuthorizationService {
     @InjectLogger
     private static Logger logger;
@@ -42,12 +43,8 @@ public class AuthorizationService {
 
         Session session = this.sessionFactory.getCurrentSession();
 
-        Transaction tx = session.beginTransaction();
-
         @SuppressWarnings("unchecked")
         List<Resource> resources = session.createCriteria(Resource.class).list();
-
-        tx.commit();
 
         return resources;
     }
@@ -57,14 +54,10 @@ public class AuthorizationService {
 
         Session session = this.sessionFactory.getCurrentSession();
 
-        Transaction tx = session.beginTransaction();
-
         Criteria criteria = session.createCriteria(Resource.class);
         criteria.add(Expression.eq("name", resourceName));
 
         List result = criteria.list();
-
-        tx.commit();
 
         if (result.size() == 0) {
             throw new ResourceNotFoundException(resourceName);
@@ -78,8 +71,6 @@ public class AuthorizationService {
 
         Session session = this.sessionFactory.getCurrentSession();
 
-        Transaction tx = session.beginTransaction();
-
         Criteria criteria = session.createCriteria(ResourceWithRole.class);
         criteria.add(Expression.eq("resource", resource));
         criteria.add(Expression.eq("user", user));
@@ -92,8 +83,6 @@ public class AuthorizationService {
             result.add(this.roleResolverService.resolve(resourceWithRole.getRole()));
         }
 
-        tx.commit();
-
         return result;
     }
 
@@ -103,16 +92,12 @@ public class AuthorizationService {
 
         Session session = this.sessionFactory.getCurrentSession();
 
-        Transaction tx = session.beginTransaction();
-
         Criteria criteria = session.createCriteria(ResourceWithRole.class);
         criteria.add(Expression.eq("resource", resource));
         criteria.add(Expression.eq("user", user));
         criteria.add(Expression.eq("role", role.ordinal()));
 
         List queryResult = criteria.list();
-
-        tx.commit();
 
         if (queryResult.size() == 0) {
             throw new ResourceDeniedException(resource.getName(), user.getUserName());
@@ -129,14 +114,10 @@ public class AuthorizationService {
 
         Session session = this.sessionFactory.getCurrentSession();
 
-        Transaction tx = session.beginTransaction();
-
         Criteria criteria = session.createCriteria(User.class);
         criteria.add(Expression.eq("userName", userName));
 
         List result = criteria.list();
-
-        tx.commit();
 
         if (result.size() == 0) {
             throw new UserNotFoundException(userName);

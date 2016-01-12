@@ -3,10 +3,10 @@ package ru.killer666.trpo.aaa.services;
 import lombok.NonNull;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.killer666.trpo.aaa.InjectLogger;
 import ru.killer666.trpo.aaa.domains.Accounting;
 import ru.killer666.trpo.aaa.domains.User;
@@ -14,6 +14,7 @@ import ru.killer666.trpo.aaa.domains.User;
 import java.util.Calendar;
 
 @Service
+@Transactional
 public class AccountingService {
     @InjectLogger
     private static Logger logger;
@@ -38,11 +39,7 @@ public class AccountingService {
 
         Session session = this.sessionFactory.getCurrentSession();
 
-        Transaction tx = session.beginTransaction();
-
         session.save(accounting);
         accounting.getResources().forEach(session::save);
-
-        tx.commit();
     }
 }
